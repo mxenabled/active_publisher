@@ -1,4 +1,16 @@
 language: ruby
 rvm:
-  - 2.2.1
-before_install: gem install bundler -v 1.10.6
+ - 1.9
+ - 2.0
+ - 2.1
+ - 2.2
+ - jruby-1.7
+ - jruby-9.0.4.0
+ - jruby-head
+services:
+ - rabbitmq
+sudo: false
+cache: bundler
+matrix:
+  allow_failures:
+    - rvm: jruby-head
