@@ -1,6 +1,6 @@
 require "yaml"
 
-module ActionSubscriber
+module ActivePublisher
   class Configuration
     attr_accessor :async_publisher,
                   :async_publisher_drop_messages_when_queue_full,
