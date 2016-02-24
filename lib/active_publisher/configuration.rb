@@ -4,9 +4,9 @@ module ActivePublisher
   class Configuration
     attr_accessor :async_publisher,
                   :async_publisher_drop_messages_when_queue_full,
+                  :async_publisher_error_handler,
                   :async_publisher_max_queue_size,
                   :async_publisher_supervisor_interval,
-                  :async_publisher_error_handler,
                   :heartbeat,
                   :host,
                   :hosts,
@@ -21,12 +21,12 @@ module ActivePublisher
     CONFIGURATION_MUTEX = ::Mutex.new
 
     DEFAULTS = {
-      :async_publisher => 'memory',
+      :async_publisher => "memory",
       :async_publisher_drop_messages_when_queue_full => false,
       :async_publisher_max_queue_size => 1_000_000,
       :async_publisher_supervisor_interval => 200, # in milliseconds
       :heartbeat => 5,
-      :host => 'localhost',
+      :host => "localhost",
       :hosts => [],
       :port => 5672,
       :publisher_confirms => false,
@@ -46,15 +46,7 @@ module ActivePublisher
         @configure_from_yaml_and_cli ||= begin
           env = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || ENV["APP_ENV"] || "development"
 
-          yaml_config = {}
-          absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
-            action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
-          if ::File.exists?(absolute_config_path)
-            yaml_config = ::YAML.load_file(absolute_config_path)[env]
-          elsif ::File.exists?(action_subscriber_config_file)
-            yaml_config = ::YAML.load_file(action_subscriber_config_file)[env]
-          end
-
+          yaml_config = attempt_to_load_yaml_file
           DEFAULTS.each_pair do |key, value|
             setting = cli_options[key] || yaml_config[key.to_s]
             ::ActivePublisher.config.__send__("#{key}=", setting) if setting
@@ -64,6 +56,22 @@ module ActivePublisher
         end
       end
     end
+
+    ##
+    # Private class methods
+    #
+    def self.attempt_to_load_yaml_file
+      yaml_config = {}
+      absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
+        action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
+      if ::File.exists?(absolute_config_path)
+        yaml_config = ::YAML.load_file(absolute_config_path)[env]
+      elsif ::File.exists?(action_subscriber_config_file)
+        yaml_config = ::YAML.load_file(action_subscriber_config_file)[env]
+      end
+      yaml_config
+    end
+    private_class_method :attempt_to_load_yaml_file
 
     ##
     # Instance Methods
