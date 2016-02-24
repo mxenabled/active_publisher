@@ -1,15 +1,19 @@
 module ActivePublisher
   class Configuration
-    attr_accessor :default_exchange,
+    attr_accessor :application_name, 
+                  :default_exchange,
                   :error_handler,
                   :heartbeat,
                   :host,
                   :hosts,
                   :port,
                   :publisher_confirms,
-                  :timeout
+                  :serializer,
+                  :timeout,
 
     def initialize
+      self.application_name = 'application_name_not_configured'
+      self.serializer = ::ActivePublisher::Adapters::JSON
       self.default_exchange = 'events'
       self.error_handler = lambda { |error, env_hash| raise }
       self.heartbeat = 5

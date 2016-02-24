@@ -39,6 +39,11 @@ module ActivePublisher
     end
   end
 
+  def self.serialize(object)
+    serializer = self.configuration.serializer
+    serializer.serialize(object)
+  end
+
   def self.with_exchange(exchange_name)
     connection = ::ActivePublisher::Connection.connection
     channel = connection.create_channel
