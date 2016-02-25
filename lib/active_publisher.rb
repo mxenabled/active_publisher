@@ -1,6 +1,14 @@
+if ::RUBY_PLATFORM == "java"
+  require 'march_hare'
+else
+  require "bunny"
+end
+
+require "active_publisher/adapters/json"
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
+require "active_publisher/publishable"
 
 module ActivePublisher
   def self.configuration
@@ -37,6 +45,11 @@ module ActivePublisher
     else
       options
     end
+  end
+
+  def self.serialize(object)
+    serializer = self.configuration.serializer
+    serializer.serialize(object)
   end
 
   def self.with_exchange(exchange_name)
