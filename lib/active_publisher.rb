@@ -1,6 +1,7 @@
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
+require "active_publisher/publishable"
 
 module ActivePublisher
   def self.configuration
