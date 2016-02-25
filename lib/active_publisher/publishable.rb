@@ -14,13 +14,18 @@ module ActivePublisher
     end
 
     def exchange
-      @exchange || ActivePublisher.configuration.default_exchange
+      @exchange || :events #ActivePublisher.configuration.default_exchange
+    end
+
+    def routing_key(event_type)
+      app_name = Rails.application.class.parent_name.downcase
+      "#{app_name}.#{self.class.name.downcase}.#{event_type}"
     end
     
     private 
 
     def active_publisher_payload
-      ActivePublisher.serialize(self)
+      ::ActivePublisher.serialize(self)
     end
 
     def publish_created_event
@@ -33,16 +38,11 @@ module ActivePublisher
 
     def publish_event(event_type)
       route = routing_key(event_type)
-      ActivePublisher.publish(route, active_publisher_payload, exchange)
+      ::ActivePublisher.publish(route, active_publisher_payload, exchange)
     end
 
     def publish_updated_event
       publish_event(:updated)
-    end
-
-
-    def routing_key(event_type)
-      "#{ActivePublisher.configuration.application_name}}.#{self.class.name.downcase}.#{event_type}"
     end
 
   end
