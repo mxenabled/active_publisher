@@ -1,6 +1,5 @@
 describe ::ActivePublisher::Configuration do
   describe "default values" do
-    specify { expect(subject.default_exchange).to eq("events") }
     specify { expect(subject.heartbeat).to eq(5) }
     specify { expect(subject.host).to eq("localhost") }
     specify { expect(subject.hosts).to eq(["localhost"]) }
