@@ -8,6 +8,14 @@ module ActivePublisher
         after_update  :publish_updated_event
       end
     end
+
+    def exchange=(exchange)
+      @exchange = exchange
+    end
+
+    def exchange
+      @exchange || ActivePublisher.configuration.default_exchange
+    end
     
     private 
 
@@ -32,13 +40,6 @@ module ActivePublisher
       publish_event(:updated)
     end
 
-    def exchange=(exchange)
-      @exchange = exchange
-    end
-
-    def exchange
-      @exchange || ActivePublisher.configuration.default_exchange
-    end
 
     def routing_key(event_type)
       "#{ActivePublisher.configuration.application_name}}.#{self.class.name.downcase}.#{event_type}"
