@@ -1,3 +1,9 @@
+if ::RUBY_PLATFORM == "java"
+  require "march_hare"
+else
+  require "bunny"
+end
+
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
