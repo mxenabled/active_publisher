@@ -8,7 +8,9 @@ describe "a basic publisher", :integration => true do
   it "publishes messages to rabbit" do
     initialize_subscriber(exchange_name, route)
     ::ActivePublisher.publish(route, payload, exchange_name)
-    expect($message).to eq([route, payload])
+    verify_expectation_within(1.0) do
+      expect($message).to eq([route, payload])
+    end
   end
 end
 
