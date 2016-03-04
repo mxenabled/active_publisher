@@ -6,7 +6,7 @@ def verify_expectation_within(number_of_seconds, check_every = 0.02)
   begin
     sleep check_every
     yield
-  rescue ::Rspec::Expectations::ExpectationNotMetError => e
+  rescue ::RSpec::Expectations::ExpectationNotMetError => e
     if ::Time.now - waiting_since > number_of_seconds
       raise e
     else
