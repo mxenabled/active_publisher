@@ -3,8 +3,12 @@ module ActivePublisher
     class InMemoryAdapter
       attr_reader :async_queue
 
-      def initialize
-        @async_queue = ::ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new
+      def initialize(drop_messages_when_queue_full = false, max_queue_size = 1_000_000, supervisor_interval = 0.2)
+        @async_queue = ::ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(
+          drop_messages_when_queue_full,
+          max_queue_size,
+          supervisor_interval
+        )
       end
 
       def publish(route, payload, exchange_name, options = {})
@@ -27,6 +31,10 @@ module ActivePublisher
       end
 
       class AsyncQueue
+        attr_accessor :drop_messages_when_queue_full,
+                      :max_queue_size,
+                      :supervisor_interval
+
         attr_reader :consumer, :queue, :supervisor
 
         if ::RUBY_PLATFORM == "java"
@@ -35,16 +43,19 @@ module ActivePublisher
           NETWORK_ERRORS = [::Bunny::Exception, ::Timeout::Error, ::IOError].freeze
         end
 
-        def initialize
+        def initialize(drop_messages_when_queue_full, max_queue_size, supervisor_interval)
+          @drop_messages_when_queue_full = drop_messages_when_queue_full
+          @max_queue_size = max_queue_size
+          @supervisor_interval = supervisor_interval
           @queue = ::Queue.new
           create_and_supervise_consumer!
         end
 
         def push(message)
           # default of 1_000_000 messages
-          if queue.size > ::ActivePublisher.configuration.async_publisher_max_queue_size
+          if queue.size > max_queue_size
             # Drop messages if the queue is full and we were configured to do so
-            return if ::ActivePublisher.configuration.async_publisher_drop_messages_when_queue_full
+            return if drop_messages_when_queue_full
 
             # By default we will raise an error to push the responsibility onto the caller
             fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Queue is full, messages will be dropped."
@@ -106,13 +117,6 @@ module ActivePublisher
                 raise unknown_error
               end
             end
-          end
-        end
-
-        def supervisor_interval
-          @supervisor_interval ||= begin
-            interval_in_milliseconds = ::ActivePublisher.configuration.async_publisher_supervisor_interval
-            interval_in_milliseconds / 1000.0
           end
         end
       end

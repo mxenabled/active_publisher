@@ -14,16 +14,8 @@ module ActivePublisher
   end
 
   module Async
-    def self.publisher_adapter
-      @publisher_adapter ||= case ::ActivePublisher.configuration.async_publisher
-                             when /memory/i then
-                               require "active_publisher/async/in_memory_adapter"
-                               ::ActivePublisher::Async::InMemoryAdapter.new
-                             when /redis/i then
-                               fail "Not yet implemented"
-                             else
-                               fail "Unknown adapter '#{::ActivePublisher.configuration.async_publisher}' provided"
-                             end
+    class << self
+      attr_accessor :publisher_adapter
     end
   end
 end

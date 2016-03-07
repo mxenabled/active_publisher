@@ -30,7 +30,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
   end
 
   describe "::AsyncQueue" do
-    subject { described_class::AsyncQueue.new }
+    subject { described_class::AsyncQueue.new(false, 1_000_000, 0.2) }
 
     describe ".initialize" do
       it "creates a supervisor" do
@@ -93,8 +93,8 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
     end
 
     describe "#push" do
-      after { ::ActivePublisher.configuration.async_publisher_max_queue_size = 1000 }
-      after { ::ActivePublisher.configuration.async_publisher_drop_messages_when_queue_full = false }
+      after { subject.max_queue_size = 1000 }
+      after { subject.drop_messages_when_queue_full = false }
 
       context "when the queue has room" do
         before { allow(::Queue).to receive(:new).and_return(mock_queue) }
@@ -106,10 +106,10 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
       end
 
       context "when the queue is full" do
-        before { ::ActivePublisher.configuration.async_publisher_max_queue_size = -1 }
+        before { subject.max_queue_size = -1 }
 
         context "and we're dropping messages" do
-          before { ::ActivePublisher.configuration.async_publisher_drop_messages_when_queue_full = true }
+          before { subject.drop_messages_when_queue_full = true }
 
           it "adding to the queue should not raise an error" do
             expect { subject.push(message) }.to_not raise_error
@@ -117,7 +117,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
         end
 
         context "and we're not dropping messages" do
-          before { ::ActivePublisher.configuration.async_publisher_drop_messages_when_queue_full = false }
+          before { subject.drop_messages_when_queue_full = false }
 
           it "adding to teh queue should raise error back to caller" do
             expect { subject.push(message) }.to raise_error(described_class::UnableToPersistMessageError)
