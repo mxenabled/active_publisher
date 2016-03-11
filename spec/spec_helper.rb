@@ -1,5 +1,8 @@
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'active_publisher'
+$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+require "active_publisher"
+require "support/setup_subscriber"
+
+::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter.new
 
 def verify_expectation_within(number_of_seconds, check_every = 0.02)
   waiting_since = ::Time.now
