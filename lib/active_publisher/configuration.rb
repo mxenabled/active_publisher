@@ -2,12 +2,7 @@ require "yaml"
 
 module ActivePublisher
   class Configuration
-    attr_accessor :async_publisher,
-                  :async_publisher_drop_messages_when_queue_full,
-                  :async_publisher_error_handler,
-                  :async_publisher_max_queue_size,
-                  :async_publisher_supervisor_interval,
-                  :heartbeat,
+    attr_accessor :heartbeat,
                   :host,
                   :hosts,
                   :password,
@@ -21,10 +16,6 @@ module ActivePublisher
     CONFIGURATION_MUTEX = ::Mutex.new
 
     DEFAULTS = {
-      :async_publisher => "memory",
-      :async_publisher_drop_messages_when_queue_full => false,
-      :async_publisher_max_queue_size => 1_000_000,
-      :async_publisher_supervisor_interval => 200, # in milliseconds
       :heartbeat => 5,
       :host => "localhost",
       :hosts => [],
@@ -77,8 +68,6 @@ module ActivePublisher
     # Instance Methods
     #
     def initialize
-      self.async_publisher_error_handler = lambda { |error, env_hash| raise error }
-
       DEFAULTS.each_pair do |key, value|
         self.__send__("#{key}=", value)
       end

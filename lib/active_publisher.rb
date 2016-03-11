@@ -4,6 +4,8 @@ else
   require "bunny"
 end
 
+require "active_publisher/async"
+require "active_publisher/async/in_memory_adapter"
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
