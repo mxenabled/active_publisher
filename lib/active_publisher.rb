@@ -5,12 +5,12 @@ else
 end
 require "thread"
 
+require "active_publisher/logging"
 require "active_publisher/async"
 require "active_publisher/async/in_memory_adapter"
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
-require "active_publisher/logging"
 
 module ActivePublisher
   def self.configuration
