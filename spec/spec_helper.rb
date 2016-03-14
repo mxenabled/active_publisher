@@ -4,6 +4,10 @@ require "support/setup_subscriber"
 
 ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter.new
 
+# Silence the logger
+$TESTING = true
+::ActivePublisher::Logging.initialize_logger(nil)
+
 def verify_expectation_within(number_of_seconds, check_every = 0.02)
   waiting_since = ::Time.now
   begin

@@ -1,9 +1,13 @@
 module ActivePublisher
   module Async
     class InMemoryAdapter
+      include ::ActivePublisher::Logging
+
       attr_reader :async_queue
 
       def initialize(drop_messages_when_queue_full = false, max_queue_size = 1_000_000, supervisor_interval = 0.2)
+        logger.info "Starting in-memory publisher adapter"
+
         @async_queue = ::ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(
           drop_messages_when_queue_full,
           max_queue_size,
@@ -21,8 +25,10 @@ module ActivePublisher
         max_wait_time = ::ActivePublisher.configuration.seconds_to_wait_for_graceful_shutdown
         started_shutting_down_at = ::Time.now
 
+        logger.info "Draining async publisher in-memory adapter queue before shutdown. current queue size: #{async_queue.size}."
         while async_queue.size > 0
           if (::Time.now - started_shutting_down_at) > max_wait_time
+            logger.info "Forcing async publisher adapter shutdown because graceful shutdown period of #{max_wait_time} seconds was exceeded. Current queue size: #{async_queue.size}."
             break
           end
 
@@ -31,6 +37,8 @@ module ActivePublisher
       end
 
       class AsyncQueue
+        include ::ActivePublisher::Logging
+
         attr_accessor :drop_messages_when_queue_full,
                       :max_queue_size,
                       :supervisor_interval
@@ -111,6 +119,11 @@ module ActivePublisher
               rescue => unknown_error
                 # Do not requeue the message because something else horrible happened.
                 @current_message = nil
+
+                # Log the error.
+                logger.info unknown_error.class
+                logger.info unknown_error.message
+                logger.info unknown_error.backtrace.join("\n")
 
                 # TODO: Find a way to bubble this out of the thread for logging purposes.
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.

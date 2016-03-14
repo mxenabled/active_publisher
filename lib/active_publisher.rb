@@ -3,7 +3,9 @@ if ::RUBY_PLATFORM == "java"
 else
   require "bunny"
 end
+require "thread"
 
+require "active_publisher/logging"
 require "active_publisher/async"
 require "active_publisher/async/in_memory_adapter"
 require "active_publisher/version"
