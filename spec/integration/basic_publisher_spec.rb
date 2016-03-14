@@ -6,26 +6,12 @@ describe "a basic publisher", :integration => true do
   let(:route) { "bob.users.created" }
 
   it "publishes messages to rabbit" do
-    initialize_subscriber(exchange_name, route)
+    setup_subscriber(exchange_name, route) do |message|
+      $message = message
+    end
     ::ActivePublisher.publish(route, payload, exchange_name)
     verify_expectation_within(1.0) do
-      expect($message).to eq([route, payload])
-    end
-  end
-end
-
-def initialize_subscriber(exchange_name, route)
-  connection = ::ActivePublisher::Connection.connection
-  channel = connection.create_channel
-  exchange = channel.topic(exchange_name)
-
-  if ::RUBY_PLATFORM == "java"
-    channel.queue("").bind(exchange, :routing_key => route).subscribe do |metadata, payload|
-      $message = [metadata.routing_key, payload]
-    end
-  else
-    channel.queue("").bind(exchange, :routing_key => route).subscribe do |delivery_info, _, payload|
-      $message = [delivery_info.routing_key, payload]
+      expect($message).to eq({:routing_key => route, :payload => payload})
     end
   end
 end
