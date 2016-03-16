@@ -64,5 +64,6 @@ module ActivePublisher
 end
 
 at_exit do
+  ::ActivePublisher::Async.publisher_adapter.shutdown! if ::ActivePublisher::Async.publisher_adapter
   ::ActivePublisher::Connection.disconnect!
 end
