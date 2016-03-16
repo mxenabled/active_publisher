@@ -6,4 +6,12 @@ describe ::ActivePublisher::Configuration do
     specify { expect(subject.port).to eq(5672) }
     specify { expect(subject.timeout).to eq(1) }
   end
+
+  it "logs errors with the default error handler" do
+    error = ::RuntimeError.new("ohai")
+    expect(::ActivePublisher::Logging.logger).to receive(:error).with(::RuntimeError)
+    expect(::ActivePublisher::Logging.logger).to receive(:error).with(error.message)
+
+    ::ActivePublisher.configuration.error_handler.call(error, {})
+  end
 end

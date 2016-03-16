@@ -2,7 +2,8 @@ require "yaml"
 
 module ActivePublisher
   class Configuration
-    attr_accessor :heartbeat,
+    attr_accessor :error_handler,
+                  :heartbeat,
                   :host,
                   :hosts,
                   :password,
@@ -16,6 +17,11 @@ module ActivePublisher
     CONFIGURATION_MUTEX = ::Mutex.new
 
     DEFAULTS = {
+      :error_handler => lambda { |error, env_hash|
+        ::ActivePublisher::Logging.logger.error(error.class)
+        ::ActivePublisher::Logging.logger.error(error.message)
+        ::ActivePublisher::Logging.logger.error(error.backtrace.join("\n")) if error.backtrace.respond_to?(:join)
+      },
       :heartbeat => 5,
       :host => "localhost",
       :hosts => [],

@@ -120,10 +120,7 @@ module ActivePublisher
                 # Do not requeue the message because something else horrible happened.
                 @current_message = nil
 
-                # Log the error.
-                logger.info unknown_error.class
-                logger.info unknown_error.message
-                logger.info unknown_error.backtrace.join("\n")
+                ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
 
                 # TODO: Find a way to bubble this out of the thread for logging purposes.
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
