@@ -63,6 +63,10 @@ module ActivePublisher
   end
 end
 
+if defined?(::ActiveSupport)
+  ::ActiveSupport.run_load_hooks(:active_publisher)
+end
+
 at_exit do
   ::ActivePublisher::Async.publisher_adapter.shutdown! if ::ActivePublisher::Async.publisher_adapter
   ::ActivePublisher::Connection.disconnect!
