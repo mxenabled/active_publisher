@@ -43,7 +43,7 @@ module ActivePublisher
         @configure_from_yaml_and_cli ||= begin
           env = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || ENV["APP_ENV"] || "development"
 
-          yaml_config = attempt_to_load_yaml_file
+          yaml_config = attempt_to_load_yaml_file(env)
           DEFAULTS.each_pair do |key, value|
             setting = cli_options[key] || yaml_config[key.to_s]
             ::ActivePublisher.config.__send__("#{key}=", setting) if setting
@@ -57,7 +57,7 @@ module ActivePublisher
     ##
     # Private class methods
     #
-    def self.attempt_to_load_yaml_file
+    def self.attempt_to_load_yaml_file(env)
       yaml_config = {}
       absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
         action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
