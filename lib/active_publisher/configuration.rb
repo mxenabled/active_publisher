@@ -45,8 +45,8 @@ module ActivePublisher
 
           yaml_config = attempt_to_load_yaml_file(env)
           DEFAULTS.each_pair do |key, value|
-            setting = cli_options[key] || yaml_config[key.to_s]
-            ::ActivePublisher.config.__send__("#{key}=", setting) if setting
+            setting = cli_options[key] || cli_options[key.to_s] || yaml_config[key] || yaml_config[key.to_s]
+            ::ActivePublisher.configuration.public_send("#{key}=", setting) if setting
           end
 
           true
@@ -60,7 +60,7 @@ module ActivePublisher
     def self.attempt_to_load_yaml_file(env)
       yaml_config = {}
       absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
-        action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
+      action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
       if ::File.exists?(absolute_config_path)
         yaml_config = ::YAML.load_file(absolute_config_path)[env]
       elsif ::File.exists?(action_subscriber_config_file)
