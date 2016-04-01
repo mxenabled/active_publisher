@@ -14,4 +14,16 @@ describe ::ActivePublisher::Configuration do
 
     ::ActivePublisher.configuration.error_handler.call(error, {})
   end
+
+  describe ".configure_from_yaml_and_cli" do
+    it "sets configuration values on the shared configuration object" do
+      expect(::ActivePublisher.configuration).to receive(:password=).with("WAT").and_return(true)
+      ::ActivePublisher::Configuration.configure_from_yaml_and_cli({:password => "WAT"}, true)
+    end
+
+    it "looks for string keys as well" do
+      expect(::ActivePublisher.configuration).to receive(:password=).with("WAT").and_return(true)
+      ::ActivePublisher::Configuration.configure_from_yaml_and_cli({"password" => "WAT"}, true)
+    end
+  end
 end
