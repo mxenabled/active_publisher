@@ -42,7 +42,9 @@ module ActivePublisher
       {
         :heartbeat                     => ::ActivePublisher.configuration.heartbeat,
         :hosts                         => ::ActivePublisher.configuration.hosts,
+        :pass                          => ::ActivePublisher.configuration.password,
         :port                          => ::ActivePublisher.configuration.port,
+        :user                          => ::ActivePublisher.configuration.username,
         :continuation_timeout          => ::ActivePublisher.configuration.timeout * 1_000.0, #convert sec to ms
         :automatically_recover         => true,
         :network_recovery_interval     => NETWORK_RECOVERY_INTERVAL,
