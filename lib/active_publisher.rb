@@ -33,11 +33,13 @@ module ActivePublisher
     end
   end
 
-  def self.publishing_options(route, options = {})
-    options[:mandatory] = false unless options.key(:mandatory)
-    options[:persistent] = false unless options.key(:persistent)
-    options[:routing_key] = route
-
+  def self.publishing_options(route, in_options = {})
+    options = {
+      :mandatory => false,
+      :persistent => false,
+      :routing_key => route,
+    }.merge(in_options)
+    
     if ::RUBY_PLATFORM == "java"
       java_options = {}
       java_options[:mandatory]   = options.delete(:mandatory)

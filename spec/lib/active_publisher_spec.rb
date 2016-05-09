@@ -1,4 +1,5 @@
 describe ::ActivePublisher do
+  PUBLISH_OPTIONS = {:persistent => true}.freeze
   let(:exchange) { double("Rabbit Exchange") }
   let(:exchange_name) { "events" }
   let(:payload) { "Yo Dawg" }
@@ -13,21 +14,21 @@ describe ::ActivePublisher do
           expect(published_payload).to eq(payload)
           expect(published_options[:routing_key]).to eq(route)
           expect(published_options[:mandatory]).to eq(false)
-          expect(published_options[:properties][:persistent]).to eq(false)
+          expect(published_options[:properties][:persistent]).to eq(true)
         end
 
-        described_class.publish(route, payload, exchange_name)
+        described_class.publish(route, payload, exchange_name, PUBLISH_OPTIONS)
       end
     else
       it "publishes to the exchange with default options for bunny" do
         expect(exchange).to receive(:publish) do |published_payload, published_options|
           expect(published_payload).to eq(payload)
           expect(published_options[:routing_key]).to eq(route)
-          expect(published_options[:persistent]).to eq(false)
+          expect(published_options[:persistent]).to eq(true)
           expect(published_options[:mandatory]).to eq(false)
         end
 
-        described_class.publish(route, payload, exchange_name)
+        described_class.publish(route, payload, exchange_name, PUBLISH_OPTIONS)
       end
     end
   end
