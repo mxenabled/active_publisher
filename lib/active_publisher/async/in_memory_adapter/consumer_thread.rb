@@ -3,7 +3,7 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class ConsumerThread
-        attr_reader :current_message, :thread, :queue
+        attr_reader :current_messages, :thread, :queue
 
         if ::RUBY_PLATFORM == "java"
           NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
@@ -12,6 +12,7 @@ module ActivePublisher
         end
 
         def initialize(listen_queue)
+          @current_messages = []
           @queue = listen_queue
           start_thread
         end
@@ -39,23 +40,25 @@ module ActivePublisher
           return if alive?
           @thread = ::Thread.new do
             loop do
-              # Write "current_message" so we can requeue should something happen to the consumer.
-              @current_message = message = queue.pop
+              # Write "current_messages" so we can requeue should something happen to the consumer.
+              @current_messages << message = queue.pop
 
               begin
                 ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
 
                 # Reset
-                @current_message = nil
+                @current_messages = []
               rescue *NETWORK_ERRORS
                 # Sleep because connection is down
                 await_network_reconnect
 
                 # Requeue and try again.
-                queue.push(@current_message) if @current_message
+                @current_messages.each do |current_message|
+                  queue.push(current_message)
+                end
               rescue => unknown_error
                 # Do not requeue the message because something else horrible happened.
-                @current_message = nil
+                @current_messages = []
 
                 ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
 

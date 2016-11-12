@@ -42,9 +42,11 @@ module ActivePublisher
           @supervisor = ::Thread.new do
             loop do
               unless consumer.alive?
-                # We might need to requeue the last message.
-                consumer_current_message = consumer.current_message
-                queue.push(consumer_current_message) if consumer_current_message
+                # We might need to requeue the last messages popped
+                consumer.current_messages.each do |current_message|
+                  queue.push(current_message)
+                end
+
                 consumer.kill
                 @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end
