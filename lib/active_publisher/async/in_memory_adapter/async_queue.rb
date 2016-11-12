@@ -38,7 +38,7 @@ module ActivePublisher
         private
 
         def create_and_supervise_consumer!
-          @consumer = create_consumer
+          @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
           @supervisor = ::Thread.new do
             loop do
               unless consumer.alive?
@@ -46,17 +46,13 @@ module ActivePublisher
                 consumer_current_message = consumer.current_message
                 queue.push(consumer_current_message) if consumer_current_message
                 consumer.kill
-                @consumer = create_consumer
+                @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end
 
               # Pause before checking the consumer again.
               sleep supervisor_interval
             end
           end
-        end
-
-        def create_consumer
-          ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
         end
       end
 

@@ -40,11 +40,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
     end
 
     describe "#create_and_supervise_consumer!" do
-      it "creates a supervisor" do
-        expect_any_instance_of(ActivePublisher::Async::InMemoryAdapter::AsyncQueue).to receive(:create_consumer)
-        subject
-      end
-
       it "restarts the consumer when it dies" do
         consumer = subject.consumer
         consumer.kill
@@ -67,7 +62,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "when network error occurs" do
-        let(:error) { ActivePublisher::Async::InMemoryAdapter::AsyncQueue::NETWORK_ERRORS.first }
+        let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
         before { allow(::ActivePublisher).to receive(:publish).and_raise(error) }
 
         it "requeues the message" do
@@ -96,7 +91,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       after { subject.drop_messages_when_queue_full = false }
 
       context "when the queue has room" do
-        before { allow(::Queue).to receive(:new).and_return(mock_queue) }
+        before { allow(Queue).to receive(:new).and_return(mock_queue) }
 
         it "successfully adds to the queue" do
           expect(mock_queue).to receive(:push).with(message)

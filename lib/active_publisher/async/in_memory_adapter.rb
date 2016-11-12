@@ -5,6 +5,11 @@ require "active_publisher/async/in_memory_adapter/consumer_thread"
 module ActivePublisher
   module Async
     module InMemoryAdapter
+
+      def self.new(*args)
+        ::ActivePublisher::Async::InMemoryAdapter::Adapter.new(*args)
+      end
+
       class UnableToPersistMessageError < ::StandardError; end
 
       class Adapter

@@ -1,4 +1,4 @@
-require 'pry'
+
 module ActivePublisher
   module Async
     module InMemoryAdapter
@@ -28,7 +28,11 @@ module ActivePublisher
         private
 
         def await_network_reconnect
-          sleep ::ActivePublisher::RabbitConnection::NETWORK_RECOVERY_INTERVAL
+          if defined?(ActivePublisher::RabbitConnection)
+            sleep ::ActivePublisher::RabbitConnection::NETWORK_RECOVERY_INTERVAL
+          else
+            sleep 0.1
+          end
         end
 
         def start_thread
