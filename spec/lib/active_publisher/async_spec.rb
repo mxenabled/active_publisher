@@ -1,6 +1,6 @@
 describe ::ActivePublisher::Async do
   before { described_class.instance_variable_set(:@publisher_adapter, nil) }
-  after { ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter.new }
+  after { ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new }
 
   let(:mock_adapter) { double(:publish => nil) }
 
@@ -14,10 +14,10 @@ describe ::ActivePublisher::Async do
   end
 
   context "when an in-memory adapter is selected" do
-    before { ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter.new }
+    before { ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new }
 
     it "Creates an in-memory publisher" do
-      expect(described_class.publisher_adapter).to be_an(::ActivePublisher::Async::InMemoryAdapter)
+      expect(described_class.publisher_adapter).to be_an(::ActivePublisher::Async::InMemoryAdapter::Adapter)
     end
   end
 end
