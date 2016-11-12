@@ -3,7 +3,6 @@ require "active_publisher"
 require "support/setup_subscriber"
 
 ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new
-::Thread.abort_on_exception = true
 # Silence the logger
 $TESTING = true
 ::ActivePublisher::Logging.initialize_logger(nil)
