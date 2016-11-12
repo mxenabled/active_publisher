@@ -14,6 +14,8 @@ require "active_publisher/configuration"
 require "active_publisher/connection"
 
 module ActivePublisher
+  class UnknownMessageClassError < StandardError; end
+
   def self.configuration
     @configuration ||= ::ActivePublisher::Configuration.new
   end
@@ -37,7 +39,7 @@ module ActivePublisher
   def self.publish_all(exchange_name, messages)
     with_exchange(exchange_name) do |exchange|
       messages.each do |message|
-        raise "bulk publishing messages must be of type ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+        fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
         exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
       end
     end
