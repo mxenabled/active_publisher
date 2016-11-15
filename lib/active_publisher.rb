@@ -8,11 +8,14 @@ require "thread"
 require "active_publisher/logging"
 require "active_publisher/async"
 require "active_publisher/async/in_memory_adapter"
+require "active_publisher/message"
 require "active_publisher/version"
 require "active_publisher/configuration"
 require "active_publisher/connection"
 
 module ActivePublisher
+  class UnknownMessageClassError < StandardError; end
+
   def self.configuration
     @configuration ||= ::ActivePublisher::Configuration.new
   end
@@ -30,6 +33,15 @@ module ActivePublisher
   def self.publish(route, payload, exchange_name, options = {})
     with_exchange(exchange_name) do |exchange|
       exchange.publish(payload, publishing_options(route, options))
+    end
+  end
+
+  def self.publish_all(exchange_name, messages)
+    with_exchange(exchange_name) do |exchange|
+      messages.each do |message|
+        fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+        exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
+      end
     end
   end
 

@@ -2,8 +2,7 @@ $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require "active_publisher"
 require "support/setup_subscriber"
 
-::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter.new
-
+::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new
 # Silence the logger
 $TESTING = true
 ::ActivePublisher::Logging.initialize_logger(nil)

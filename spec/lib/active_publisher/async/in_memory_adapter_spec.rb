@@ -1,15 +1,15 @@
-describe ::ActivePublisher::Async::InMemoryAdapter do
+describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   let(:route) { "test" }
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
   let(:options) { { :test => :ok } }
-  let(:message) { described_class::Message.new(route, payload, exchange_name, options) }
+  let(:message) { ActivePublisher::Message.new(route, payload, exchange_name, options) }
   let(:mock_queue) { double(:push => nil, :size => 0) }
 
   describe "#publish" do
     before do
-      allow(described_class::Message).to receive(:new).with(route, payload, exchange_name, options).and_return(message)
-      allow(described_class::AsyncQueue).to receive(:new).and_return(mock_queue)
+      allow(ActivePublisher::Message).to receive(:new).with(route, payload, exchange_name, options).and_return(message)
+      allow(ActivePublisher::Async::InMemoryAdapter::AsyncQueue).to receive(:new).and_return(mock_queue)
     end
 
     it "can publish a message to the queue" do
@@ -30,21 +30,16 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
   end
 
   describe "::AsyncQueue" do
-    subject { described_class::AsyncQueue.new(false, 1_000_000, 0.2) }
+    subject { ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(false, 1_000_000, 0.2) }
 
     describe ".initialize" do
       it "creates a supervisor" do
-        expect_any_instance_of(described_class::AsyncQueue).to receive(:create_and_supervise_consumer!)
+        expect_any_instance_of(ActivePublisher::Async::InMemoryAdapter::AsyncQueue).to receive(:create_and_supervise_consumer!)
         subject
       end
     end
 
     describe "#create_and_supervise_consumer!" do
-      it "creates a supervisor" do
-        expect_any_instance_of(described_class::AsyncQueue).to receive(:create_consumer)
-        subject
-      end
-
       it "restarts the consumer when it dies" do
         consumer = subject.consumer
         consumer.kill
@@ -67,13 +62,12 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
       end
 
       context "when network error occurs" do
-        let(:error) { described_class::AsyncQueue::NETWORK_ERRORS.first }
+        let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
         before { allow(::ActivePublisher).to receive(:publish).and_raise(error) }
 
         it "requeues the message" do
           consumer = subject.consumer
           expect(consumer).to be_alive
-          expect(subject).to receive(:await_network_reconnect).at_least(:once)
           subject.push(message)
           sleep 0.1 # Await results
         end
@@ -97,7 +91,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
       after { subject.drop_messages_when_queue_full = false }
 
       context "when the queue has room" do
-        before { allow(::Queue).to receive(:new).and_return(mock_queue) }
+        before { allow(Queue).to receive(:new).and_return(mock_queue) }
 
         it "successfully adds to the queue" do
           expect(mock_queue).to receive(:push).with(message)
@@ -120,7 +114,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter do
           before { subject.drop_messages_when_queue_full = false }
 
           it "adding to teh queue should raise error back to caller" do
-            expect { subject.push(message) }.to raise_error(described_class::UnableToPersistMessageError)
+            expect { subject.push(message) }.to raise_error(ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError)
           end
         end
       end
