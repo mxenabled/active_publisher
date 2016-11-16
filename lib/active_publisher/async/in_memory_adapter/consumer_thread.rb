@@ -44,8 +44,13 @@ module ActivePublisher
 
               begin
                 # Only open a single connection for each group of messages to an exchange
+                messages_to_retry = []
                 @current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
-                  ::ActivePublisher.publish_all(exchange_name, messages)
+                  begin
+                    ::ActivePublisher.publish_all(exchange_name, messages)
+                  ensure
+                    messages_to_retry.concat(messages)
+                  end
                 end
 
                 # Reset
@@ -53,10 +58,12 @@ module ActivePublisher
               rescue *NETWORK_ERRORS
                 # Sleep because connection is down
                 await_network_reconnect
+                @current_messages.concat(messages_to_retry)
 
                 # Requeue and try again.
                 queue.concat(@current_messages) unless @current_messages.empty?
               rescue => unknown_error
+                @current_messages.concat(messages_to_retry)
                 @current_messages.each do |message|
                   # Degrade to single message publish ... or at least attempt to
                   begin
