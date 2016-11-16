@@ -56,14 +56,14 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
     describe "#create_consumer" do
       it "can successfully publish a message" do
-        expect(::ActivePublisher).to receive(:publish).with(route, payload, exchange_name, options)
+        expect(::ActivePublisher).to receive(:publish_all).with(exchange_name, [message])
         subject.push(message)
         sleep 0.1 # Await results
       end
 
       context "when network error occurs" do
         let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
-        before { allow(::ActivePublisher).to receive(:publish).and_raise(error) }
+        before { allow(::ActivePublisher).to receive(:publish_all).and_raise(error) }
 
         it "requeues the message" do
           consumer = subject.consumer
@@ -74,7 +74,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "when an unknown error occurs" do
-        before { allow(::ActivePublisher).to receive(:publish).and_raise(::ArgumentError) }
+        before { allow(::ActivePublisher).to receive(:publish_all).and_raise(::ArgumentError) }
 
         it "kills the consumer" do
           consumer = subject.consumer
@@ -91,7 +91,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       after { subject.drop_messages_when_queue_full = false }
 
       context "when the queue has room" do
-        before { allow(Queue).to receive(:new).and_return(mock_queue) }
+        before { allow(::MultiOpQueue::Queue).to receive(:new).and_return(mock_queue) }
 
         it "successfully adds to the queue" do
           expect(mock_queue).to receive(:push).with(message)

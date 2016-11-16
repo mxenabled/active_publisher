@@ -1,4 +1,3 @@
-
 module ActivePublisher
   module Async
     module InMemoryAdapter
@@ -41,10 +40,13 @@ module ActivePublisher
           @thread = ::Thread.new do
             loop do
               # Write "current_messages" so we can requeue should something happen to the consumer.
-              @current_messages << message = queue.pop
+              @current_messages.concat(queue.pop_up_to(20))
 
               begin
-                ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
+                # Only open a single connection for each group of messages to an exchange
+                @current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
+                  ::ActivePublisher.publish_all(exchange_name, messages)
+                end
 
                 # Reset
                 @current_messages = []
@@ -53,14 +55,19 @@ module ActivePublisher
                 await_network_reconnect
 
                 # Requeue and try again.
-                @current_messages.each do |current_message|
-                  queue.push(current_message)
-                end
+                queue.concat(@current_messages) unless @current_messages.empty?
               rescue => unknown_error
+                @current_messages.each do |message|
+                  # Degrade to single message publish ... or at least attempt to
+                  begin
+                    ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
+                  rescue => error
+                    ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
+                  end
+                end
+
                 # Do not requeue the message because something else horrible happened.
                 @current_messages = []
-
-                ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
 
                 # TODO: Find a way to bubble this out of the thread for logging purposes.
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.

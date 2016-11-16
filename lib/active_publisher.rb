@@ -15,6 +15,7 @@ require "active_publisher/connection"
 
 module ActivePublisher
   class UnknownMessageClassError < StandardError; end
+  class ExchangeMismatchError < StandardError; end
 
   def self.configuration
     @configuration ||= ::ActivePublisher::Configuration.new
@@ -40,6 +41,7 @@ module ActivePublisher
     with_exchange(exchange_name) do |exchange|
       messages.each do |message|
         fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+        fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
         exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
       end
     end
