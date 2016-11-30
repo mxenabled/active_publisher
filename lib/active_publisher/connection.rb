@@ -24,6 +24,8 @@ module ActivePublisher
 
         @connection = nil
       end
+    rescue Timeout::Error
+      # No-op ... this happens sometimes on MRI disconnect
     end
 
     # Private API

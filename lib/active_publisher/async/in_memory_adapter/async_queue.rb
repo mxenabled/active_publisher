@@ -14,7 +14,7 @@ module ActivePublisher
           @drop_messages_when_queue_full = drop_messages_when_queue_full
           @max_queue_size = max_queue_size
           @supervisor_interval = supervisor_interval
-          @queue = ::Queue.new
+          @queue = ::MultiOpQueue::Queue.new
           create_and_supervise_consumer!
         end
 
@@ -43,10 +43,8 @@ module ActivePublisher
             loop do
               unless consumer.alive?
                 # We might need to requeue the last messages popped
-                consumer.current_messages.each do |current_message|
-                  queue.push(current_message)
-                end
-
+                current_consumer_messages = consumer.current_messages
+                queue.concat(current_consumer_messages) unless current_consumer_messages.empty?
                 consumer.kill
                 @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end

@@ -7,6 +7,30 @@ describe ::ActivePublisher do
 
   before { allow(described_class).to receive(:with_exchange).with(exchange_name).and_yield(exchange) }
 
+  describe ".publish_all" do
+    it "raises an error if the messages array are not Message objects" do
+      expect { described_class.publish_all(exchange_name, [1, 2, 3]) }.to raise_error(ActivePublisher::UnknownMessageClassError)
+    end
+
+    it "raises an error if the messages are meant for a different exchange" do
+      messages = [
+        ActivePublisher::Message.new(route, payload, "something else"),
+      ]
+
+      expect { described_class.publish_all(exchange_name, messages) }.to raise_error(ActivePublisher::ExchangeMismatchError)
+    end
+
+    it "publishes to a single connection the messages" do
+      expect(exchange).to receive(:publish).twice
+      messages = [
+        ActivePublisher::Message.new(route, payload, exchange_name),
+        ActivePublisher::Message.new(route, payload, exchange_name),
+      ]
+
+      described_class.publish_all(exchange_name, messages)
+    end
+  end
+
   describe '.publish' do
     if ::RUBY_PLATFORM == "java"
       it "publishes to the exchange with default options for march_hare" do
