@@ -32,7 +32,10 @@ module ActivePublisher
         end
 
         def size
-          queue.size
+          # Requests might be in flight (out of the queue, but not yet published), so taking the max should be
+          # good enough to make sure we're honest about the actual queue size.
+          return queue.size if consumer.nil?
+          [queue.size, consumer.sampled_queue_size].max
         end
 
         private
@@ -42,9 +45,6 @@ module ActivePublisher
           @supervisor = ::Thread.new do
             loop do
               unless consumer.alive?
-                # We might need to requeue the last messages popped
-                current_consumer_messages = consumer.current_messages
-                queue.concat(current_consumer_messages) unless current_consumer_messages.empty?
                 consumer.kill
                 @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end
