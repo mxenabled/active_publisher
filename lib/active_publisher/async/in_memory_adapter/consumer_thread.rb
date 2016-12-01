@@ -40,14 +40,20 @@ module ActivePublisher
           @thread = ::Thread.new do
             loop do
               # Write "current_messages" so we can requeue should something happen to the consumer.
-              @current_messages.concat(queue.pop_up_to(20))
+              @current_messages = queue.pop_up_to(20)
 
               begin
                 # Only open a single connection for each group of messages to an exchange
                 messages_to_retry = []
-                @current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
+
+                loop do
+                  break if @current_messages.empty?
+                  message_exchange = @current_messages.first.exchange_name
+                  messages = @current_messages.select { |current_message| current_message.exchange_name == message_exchange }
+                  @current_messages = @current_messages - messages
+
                   begin
-                    ::ActivePublisher.publish_all(exchange_name, messages)
+                    ::ActivePublisher.publish_all(message_exchange, messages)
                   ensure
                     messages_to_retry.concat(messages)
                   end
