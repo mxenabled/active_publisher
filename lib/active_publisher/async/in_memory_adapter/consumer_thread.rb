@@ -2,7 +2,7 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class ConsumerThread
-        attr_reader :current_messages, :thread, :queue
+        attr_reader :thread, :queue, :sampled_queue_size
 
         if ::RUBY_PLATFORM == "java"
           NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
@@ -11,8 +11,8 @@ module ActivePublisher
         end
 
         def initialize(listen_queue)
-          @current_messages = []
           @queue = listen_queue
+          @sampled_queue_size = queue.size
           start_thread
         end
 
@@ -39,42 +39,35 @@ module ActivePublisher
           return if alive?
           @thread = ::Thread.new do
             loop do
-              # Write "current_messages" so we can requeue should something happen to the consumer.
-              @current_messages.concat(queue.pop_up_to(20))
+              # Sample the queue size so we don't shutdown when messages are in flight.
+              @sampled_queue_size = queue.size
+              current_messages = queue.pop_up_to(20)
 
               begin
                 # Only open a single connection for each group of messages to an exchange
-                messages_to_retry = []
-                @current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
+                current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
                   begin
+                    current_messages -= messages
                     ::ActivePublisher.publish_all(exchange_name, messages)
                   ensure
-                    messages_to_retry.concat(messages)
+                    current_messages.concat(messages)
                   end
                 end
-
-                # Reset
-                @current_messages = []
               rescue *NETWORK_ERRORS
                 # Sleep because connection is down
                 await_network_reconnect
-                @current_messages.concat(messages_to_retry)
 
                 # Requeue and try again.
-                queue.concat(@current_messages) unless @current_messages.empty?
+                queue.concat(current_messages)
               rescue => unknown_error
-                @current_messages.concat(messages_to_retry)
-                @current_messages.each do |message|
+                current_messages.each do |message|
                   # Degrade to single message publish ... or at least attempt to
                   begin
                     ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
-                  rescue => error
+                  rescue
                     ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
                   end
                 end
-
-                # Do not requeue the message because something else horrible happened.
-                @current_messages = []
 
                 # TODO: Find a way to bubble this out of the thread for logging purposes.
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
