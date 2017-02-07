@@ -42,15 +42,20 @@ module ActivePublisher
 
     def self.connection_options
       {
+        :automatically_recover         => true,
+        :continuation_timeout          => ::ActivePublisher.configuration.timeout * 1_000.0, #convert sec to ms
         :heartbeat                     => ::ActivePublisher.configuration.heartbeat,
         :hosts                         => ::ActivePublisher.configuration.hosts,
+        :network_recovery_interval     => NETWORK_RECOVERY_INTERVAL,
         :pass                          => ::ActivePublisher.configuration.password,
         :port                          => ::ActivePublisher.configuration.port,
-        :user                          => ::ActivePublisher.configuration.username,
-        :continuation_timeout          => ::ActivePublisher.configuration.timeout * 1_000.0, #convert sec to ms
-        :automatically_recover         => true,
-        :network_recovery_interval     => NETWORK_RECOVERY_INTERVAL,
         :recover_from_connection_close => true,
+        :tls                           => ::ActivePublisher.configuration.tls,
+        :tls_ca_certificates           => ::ActivePublisher.configuration.tls_ca_certificates,
+        :tls_cert                      => ::ActivePublisher.configuration.tls_cert,
+        :tls_key                       => ::ActivePublisher.configuration.tls_key,
+        :user                          => ::ActivePublisher.configuration.username,
+        :verify_peer                   => ::ActivePublisher.configuration.verify_peer,
       }
     end
     private_class_method :connection_options

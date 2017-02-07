@@ -10,8 +10,13 @@ module ActivePublisher
                   :port,
                   :publisher_confirms,
                   :seconds_to_wait_for_graceful_shutdown,
-                  :username,
                   :timeout,
+                  :tls,
+                  :tls_ca_certificates,
+                  :tls_cert,
+                  :tls_key,
+                  :username,
+                  :verify_peer,
                   :virtual_host
 
     CONFIGURATION_MUTEX = ::Mutex.new
@@ -25,12 +30,17 @@ module ActivePublisher
       :heartbeat => 5,
       :host => "localhost",
       :hosts => [],
+      :password => "guest",
       :port => 5672,
       :publisher_confirms => false,
       :seconds_to_wait_for_graceful_shutdown => 30,
       :timeout => 1,
+      :tls => false,
+      :tls_ca_certificates => [],
+      :tls_cert => nil,
+      :tls_key => nil,
       :username => "guest",
-      :password => "guest",
+      :verify_peer => true,
       :virtual_host => "/"
     }
 
