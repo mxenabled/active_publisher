@@ -104,7 +104,7 @@ module ActivePublisher
               raise
             end
           end
-          if channel.uses_publisher_confirms?
+          if channel.using_publisher_confirms?
             begin
               channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
             rescue
