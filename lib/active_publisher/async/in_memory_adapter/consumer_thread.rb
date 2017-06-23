@@ -43,7 +43,7 @@ module ActivePublisher
             loop do
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
-              current_messages = queue.pop_up_to(20)
+              current_messages = queue.pop_up_to(50)
 
               begin
                 # Only open a single connection for each group of messages to an exchange
@@ -81,6 +81,7 @@ module ActivePublisher
 
         def publish_all(channel, exchange_name, messages)
           exchange = channel.topic(exchange_name)
+          potentially_retry = []
           loop do
             break if messages.empty?
             message = messages.shift
@@ -91,12 +92,20 @@ module ActivePublisher
             begin
               options = ::ActivePublisher.publishing_options(message.route, message.options || {})
               exchange.publish(message.payload, options)
+              potentially_retry << message
             rescue
               messages << message
               raise
             end
           end
-          channel.wait_for_confirms(10_000) if channel.uses_publisher_confirms?
+          if channel.uses_publisher_confirms?
+            begin
+              channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
+            rescue
+              messages.concat(potentially_retry)
+              raise
+            end
+          end
         end
       end
     end
