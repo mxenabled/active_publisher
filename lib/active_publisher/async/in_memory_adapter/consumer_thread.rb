@@ -38,6 +38,8 @@ module ActivePublisher
         def start_thread
           return if alive?
           @thread = ::Thread.new do
+            @channel = ::ActivePublisher::Connection.connection.create_channel
+            @channel.confirm_select if ::ActivePublisher.configuration.publisher_confirms
             loop do
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
@@ -48,7 +50,7 @@ module ActivePublisher
                 current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
                   begin
                     current_messages -= messages
-                    ::ActivePublisher.publish_all(exchange_name, messages)
+                    publish_all(@channel, exchange_name, messages)
                   ensure
                     current_messages.concat(messages)
                   end
@@ -75,6 +77,26 @@ module ActivePublisher
               end
             end
           end
+        end
+
+        def publish_all(channel, exchange_name, messages)
+          exchange = channel.topic(exchange_name)
+          loop do
+            break if messages.empty?
+            message = messages.shift
+
+            fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+            fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
+
+            begin
+              options = ::ActivePublisher.publishing_options(message.route, message.options || {})
+              exchange.publish(message.payload, options)
+            rescue
+              messages << message
+              raise
+            end
+          end
+          channel.wait_for_confirms(10_000) if channel.uses_publisher_confirms?
         end
       end
     end
