@@ -35,17 +35,23 @@ module ActivePublisher
           end
         end
 
+        def make_channel
+          channel = ::ActivePublisher::Connection.connection.create_channel
+          channel.confirm_select if ::ActivePublisher.configuration.publisher_confirms
+          channel
+        end
+
         def start_thread
           return if alive?
           @thread = ::Thread.new do
-            @channel = ::ActivePublisher::Connection.connection.create_channel
-            @channel.confirm_select if ::ActivePublisher.configuration.publisher_confirms
             loop do
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
               current_messages = queue.pop_up_to(50)
 
               begin
+                @channel ||= make_channel
+
                 # Only open a single connection for each group of messages to an exchange
                 current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
                   begin
