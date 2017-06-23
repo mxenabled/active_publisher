@@ -104,14 +104,19 @@ module ActivePublisher
               raise
             end
           end
-          if channel.using_publisher_confirms?
-            begin
-              channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
-            rescue
-              messages.concat(potentially_retry)
-              raise
-            end
+          wait_for_confirms(channel, messages, potentially_retry)
+        end
+
+        def wait_for_confirms(channel, messages, potentially_retry)
+          return true unless channel.using_publisher_confirms?
+          if channel.method(:wait_for_confirms).arity > 0
+            channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
+          else
+            channel.wait_for_confirms
           end
+        rescue
+          messages.concat(potentially_retry)
+          raise
         end
       end
     end
