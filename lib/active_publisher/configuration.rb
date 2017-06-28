@@ -9,6 +9,7 @@ module ActivePublisher
                   :password,
                   :port,
                   :publisher_confirms,
+                  :publisher_confirms_timeout,
                   :seconds_to_wait_for_graceful_shutdown,
                   :timeout,
                   :tls,
@@ -33,6 +34,7 @@ module ActivePublisher
       :password => "guest",
       :port => 5672,
       :publisher_confirms => false,
+      :publisher_confirms_timeout => 5_000, #specified as a number of milliseconds
       :seconds_to_wait_for_graceful_shutdown => 30,
       :timeout => 1,
       :tls => false,

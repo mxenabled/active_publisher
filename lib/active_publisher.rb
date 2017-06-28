@@ -16,6 +16,7 @@ require "active_publisher/connection"
 module ActivePublisher
   class UnknownMessageClassError < StandardError; end
   class ExchangeMismatchError < StandardError; end
+  class FailedPublisherConfirms < StandardError; end
 
   def self.configuration
     @configuration ||= ::ActivePublisher::Configuration.new
@@ -62,7 +63,7 @@ module ActivePublisher
       :persistent => false,
       :routing_key => route,
     }.merge(in_options)
-    
+
     if ::RUBY_PLATFORM == "java"
       java_options = {}
       java_options[:mandatory]   = options.delete(:mandatory)

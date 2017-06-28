@@ -35,20 +35,28 @@ module ActivePublisher
           end
         end
 
+        def make_channel
+          channel = ::ActivePublisher::Connection.connection.create_channel
+          channel.confirm_select if ::ActivePublisher.configuration.publisher_confirms
+          channel
+        end
+
         def start_thread
           return if alive?
           @thread = ::Thread.new do
             loop do
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
-              current_messages = queue.pop_up_to(20)
+              current_messages = queue.pop_up_to(50)
 
               begin
+                @channel ||= make_channel
+
                 # Only open a single connection for each group of messages to an exchange
                 current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
                   begin
                     current_messages -= messages
-                    ::ActivePublisher.publish_all(exchange_name, messages)
+                    publish_all(@channel, exchange_name, messages)
                   ensure
                     current_messages.concat(messages)
                   end
@@ -75,6 +83,40 @@ module ActivePublisher
               end
             end
           end
+        end
+
+        def publish_all(channel, exchange_name, messages)
+          exchange = channel.topic(exchange_name)
+          potentially_retry = []
+          loop do
+            break if messages.empty?
+            message = messages.shift
+
+            fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+            fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
+
+            begin
+              options = ::ActivePublisher.publishing_options(message.route, message.options || {})
+              exchange.publish(message.payload, options)
+              potentially_retry << message
+            rescue
+              messages << message
+              raise
+            end
+          end
+          wait_for_confirms(channel, messages, potentially_retry)
+        end
+
+        def wait_for_confirms(channel, messages, potentially_retry)
+          return true unless channel.using_publisher_confirms?
+          if channel.method(:wait_for_confirms).arity > 0
+            channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
+          else
+            channel.wait_for_confirms
+          end
+        rescue
+          messages.concat(potentially_retry)
+          raise
         end
       end
     end

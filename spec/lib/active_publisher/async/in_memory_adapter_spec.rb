@@ -1,4 +1,5 @@
 describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
+  let(:consumer) { subject.consumer }
   let(:route) { "test" }
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
@@ -41,7 +42,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
     describe "#create_and_supervise_consumer!" do
       it "restarts the consumer when it dies" do
-        consumer = subject.consumer
         consumer.kill
 
         verify_expectation_within(0.1) do
@@ -56,14 +56,14 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
     describe "#create_consumer" do
       it "can successfully publish a message" do
-        expect(::ActivePublisher).to receive(:publish_all).with(exchange_name, [message])
+        expect(consumer).to receive(:publish_all).with(anything, exchange_name, [message])
         subject.push(message)
         sleep 0.1 # Await results
       end
 
       context "when network error occurs" do
         let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
-        before { allow(::ActivePublisher).to receive(:publish_all).and_raise(error) }
+        before { allow(consumer).to receive(:publish_all).and_raise(error) }
 
         it "requeues the message" do
           consumer = subject.consumer
@@ -74,10 +74,9 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "when an unknown error occurs" do
-        before { allow(::ActivePublisher).to receive(:publish_all).and_raise(::ArgumentError) }
+        before { allow(consumer).to receive(:publish_all).and_raise(::ArgumentError) }
 
         it "kills the consumer" do
-          consumer = subject.consumer
           expect(consumer).to be_alive
           subject.push(message)
           sleep 0.1 # Await results
