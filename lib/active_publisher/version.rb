@@ -1,3 +1,3 @@
 module ActivePublisher
-  VERSION = "0.4.0.pre1"
+  VERSION = "0.4.0"
 end
