@@ -32,8 +32,8 @@ module ActivePublisher
   # @param [String] payload The message you are sending. Should already be encoded as a string.
   # @param [String] exchange The exchange you want to publish to.
   # @param [Hash] options hash to set message parameters (e.g. headers)
-  def self.publish(route, payload, exchange_name, options = {})
-    with_exchange(exchange_name) do |exchange|
+  def self.publish(route, payload, exchange_name, options = {}, exchange_options = {})
+    with_exchange(exchange_name, exchange_options) do |exchange|
       exchange.publish(payload, publishing_options(route, options))
     end
   end
@@ -75,12 +75,12 @@ module ActivePublisher
     end
   end
 
-  def self.with_exchange(exchange_name)
+  def self.with_exchange(exchange_name, exchange_options = {})
     connection = ::ActivePublisher::Connection.connection
     channel = connection.create_channel
     begin
       channel.confirm_select if configuration.publisher_confirms
-      exchange = channel.topic(exchange_name)
+      exchange = channel.topic(exchange_name, exchange_options)
       yield(exchange)
       channel.wait_for_confirms if configuration.publisher_confirms
     ensure
