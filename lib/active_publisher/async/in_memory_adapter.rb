@@ -18,7 +18,7 @@ module ActivePublisher
 
         attr_reader :async_queue
 
-        def initialize(back_pressure_strategy = :raise, max_queue_size = 1_000_000, supervisor_interval = 0.2)
+        def initialize(back_pressure_strategy = :raise, max_queue_size = 100_000, supervisor_interval = 0.2)
           logger.info "Starting in-memory publisher adapter"
 
           @async_queue = ::ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(

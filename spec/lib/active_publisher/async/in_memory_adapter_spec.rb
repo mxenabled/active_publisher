@@ -7,7 +7,23 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   let(:message) { ActivePublisher::Message.new(route, payload, exchange_name, options) }
   let(:mock_queue) { double(:push => nil, :size => 0) }
   let(:back_pressure_strategy) { :raise }
-  let(:max_queue_size) { 1_000_000 }
+  let(:max_queue_size) { 100 }
+
+  describe ".new" do
+    context "defaults" do
+      it "sets a default max queue size" do
+        expect(subject.async_queue.max_queue_size).to eq(100_000)
+      end
+
+      it "sets a default back pressure strategy" do
+        expect(subject.async_queue.back_pressure_strategy).to eq(:raise)
+      end
+
+      it "sets a default supervisor interval" do
+        expect(subject.async_queue.supervisor_interval).to eq(0.2)
+      end
+    end
+  end
 
   describe "#publish" do
     before do
