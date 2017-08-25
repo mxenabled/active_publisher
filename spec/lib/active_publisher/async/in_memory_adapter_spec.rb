@@ -116,7 +116,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       context "when the queue is full" do
         let(:max_queue_size) { -1 }
 
-        context "and we're dropping messages" do
+        context "dropping messages" do
           let(:back_pressure_strategy) { :drop }
 
           it "adding to the queue should not raise an error" do
@@ -124,7 +124,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           end
         end
 
-        context "and we're waiting for space in the queue" do
+        context "waiting for space in the queue" do
           let(:back_pressure_strategy) { :wait }
 
           it "adding to the queue should not raise an error" do
@@ -140,7 +140,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           end
         end
 
-        context "and we're raise errors" do
+        context "raise errors" do
           it "adding to teh queue should raise error back to caller" do
             expect { subject.push(message) }.to raise_error(ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError)
           end
