@@ -6,6 +6,8 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   let(:options) { { :test => :ok } }
   let(:message) { ActivePublisher::Message.new(route, payload, exchange_name, options) }
   let(:mock_queue) { double(:push => nil, :size => 0) }
+  let(:back_pressure_strategy) { :raise }
+  let(:max_queue_size) { 1_000_000 }
 
   describe "#publish" do
     before do
@@ -31,7 +33,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   end
 
   describe "::AsyncQueue" do
-    subject { ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(false, 1_000_000, 0.2) }
+    subject { ActivePublisher::Async::InMemoryAdapter::AsyncQueue.new(back_pressure_strategy, max_queue_size, 0.2) }
 
     describe ".initialize" do
       it "creates a supervisor" do
@@ -86,9 +88,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
     end
 
     describe "#push" do
-      after { subject.max_queue_size = 1000 }
-      after { subject.drop_messages_when_queue_full = false }
-
       context "when the queue has room" do
         before { allow(::MultiOpQueue::Queue).to receive(:new).and_return(mock_queue) }
 
@@ -99,21 +98,41 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "when the queue is full" do
-        before { subject.max_queue_size = -1 }
+        let(:max_queue_size) { -1 }
 
         context "and we're dropping messages" do
-          before { subject.drop_messages_when_queue_full = true }
+          let(:back_pressure_strategy) { :drop }
 
           it "adding to the queue should not raise an error" do
             expect { subject.push(message) }.to_not raise_error
           end
         end
 
-        context "and we're not dropping messages" do
-          before { subject.drop_messages_when_queue_full = false }
+        context "and we're waiting for space in the queue" do
+          let(:back_pressure_strategy) { :wait }
 
+          it "adding to the queue should not raise an error" do
+            expect(subject.queue).to receive(:push)
+            thread = Thread.new do
+              subject.push(message)
+            end
+            # Ensure the thread is waiting by doing a sleep here and checking thread.alive?
+            sleep 0.1
+            expect(thread).to be_alive
+            subject.max_queue_size = 100
+            thread.join
+          end
+        end
+
+        context "and we're raise errors" do
           it "adding to teh queue should raise error back to caller" do
             expect { subject.push(message) }.to raise_error(ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError)
+          end
+        end
+
+        context "invalid strategy" do
+          it "raises an error" do
+            expect { subject.back_pressure_strategy = :yolo }.to raise_error("Invalid back pressure strategy: yolo")
           end
         end
       end
