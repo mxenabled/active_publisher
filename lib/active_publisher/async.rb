@@ -19,3 +19,6 @@ module ActivePublisher
     end
   end
 end
+
+require "active_publisher/async/abstract_queue"
+require "active_publisher/async/disk_backed_queue"
