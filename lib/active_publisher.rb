@@ -3,6 +3,7 @@ if ::RUBY_PLATFORM == "java"
 else
   require "bunny"
 end
+require "active_support"
 require "thread"
 
 require "active_publisher/logging"
