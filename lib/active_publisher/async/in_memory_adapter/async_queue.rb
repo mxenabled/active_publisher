@@ -37,8 +37,10 @@ module ActivePublisher
             when :raise
               fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Queue is full, messages will be dropped."
             when :wait
-              # This is a really crappy way to wait
-              sleep 0.01 until queue.size < max_queue_size
+              ::ActiveSupport::Notifications.instrument "wait_for_async_queue.active_publisher" do
+                # This is a really crappy way to wait
+                sleep 0.01 until queue.size < max_queue_size
+              end
             end
           end
 
