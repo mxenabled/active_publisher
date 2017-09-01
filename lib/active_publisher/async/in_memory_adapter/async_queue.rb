@@ -67,7 +67,7 @@ module ActivePublisher
                 @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end
 
-              # Notify the current queue size
+              # Notify the current queue size.
               ::ActiveSupport::Notifications.instrument "async_queue_size.active_publisher", queue.size
 
               # Pause before checking the consumer again.
