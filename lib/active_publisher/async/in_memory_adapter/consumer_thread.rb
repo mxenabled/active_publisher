@@ -86,7 +86,7 @@ module ActivePublisher
         end
 
         def publish_all(channel, exchange_name, messages)
-          ::ActiveSupport::Notifications.instrument "message_batch_published.active_publisher", :message_count => messages.size do
+          ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :message_count => messages.size do
             exchange = channel.topic(exchange_name)
             potentially_retry = []
             loop do
