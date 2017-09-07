@@ -2,30 +2,48 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class AsyncQueue
+        # These strategies are used to determine what to do with messages when the queue is full.
+        # :raise - Raise an error and drop the message.
+        # :drop - Silently drop the message.
+        # :wait - Wait for space in the queue to become available.
+        BACK_PRESSURE_STRATEGIES = [:raise, :drop, :wait].freeze
+
         include ::ActivePublisher::Logging
 
-        attr_accessor :drop_messages_when_queue_full,
+        attr_accessor :back_pressure_strategy,
           :max_queue_size,
           :supervisor_interval
 
         attr_reader :consumer, :queue, :supervisor
 
-        def initialize(drop_messages_when_queue_full, max_queue_size, supervisor_interval)
-          @drop_messages_when_queue_full = drop_messages_when_queue_full
+        def initialize(back_pressure_strategy, max_queue_size, supervisor_interval)
+          self.back_pressure_strategy = back_pressure_strategy
           @max_queue_size = max_queue_size
           @supervisor_interval = supervisor_interval
           @queue = ::MultiOpQueue::Queue.new
           create_and_supervise_consumer!
         end
 
-        def push(message)
-          # default of 1_000_000 messages
-          if queue.size > max_queue_size
-            # Drop messages if the queue is full and we were configured to do so
-            return if drop_messages_when_queue_full
+        def back_pressure_strategy=(strategy)
+          fail ::ArgumentError, "Invalid back pressure strategy: #{strategy}" unless BACK_PRESSURE_STRATEGIES.include?(strategy)
+          @back_pressure_strategy = strategy
+        end
 
-            # By default we will raise an error to push the responsibility onto the caller
-            fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Queue is full, messages will be dropped."
+        def push(message)
+          if queue.size >= max_queue_size
+            case back_pressure_strategy
+            when :drop
+              ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
+              return
+            when :raise
+              ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
+              fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Queue is full, messages will be dropped."
+            when :wait
+              ::ActiveSupport::Notifications.instrument "wait_for_async_queue.active_publisher" do
+                # This is a really crappy way to wait
+                sleep 0.01 until queue.size < max_queue_size
+              end
+            end
           end
 
           queue.push(message)
@@ -48,6 +66,9 @@ module ActivePublisher
                 consumer.kill
                 @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
               end
+
+              # Notify the current queue size.
+              ::ActiveSupport::Notifications.instrument "async_queue_size.active_publisher", queue.size
 
               # Pause before checking the consumer again.
               sleep supervisor_interval

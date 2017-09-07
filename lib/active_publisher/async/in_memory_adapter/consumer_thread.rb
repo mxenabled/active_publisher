@@ -86,25 +86,27 @@ module ActivePublisher
         end
 
         def publish_all(channel, exchange_name, messages)
-          exchange = channel.topic(exchange_name)
-          potentially_retry = []
-          loop do
-            break if messages.empty?
-            message = messages.shift
+          ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :message_count => messages.size do
+            exchange = channel.topic(exchange_name)
+            potentially_retry = []
+            loop do
+              break if messages.empty?
+              message = messages.shift
 
-            fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
-            fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
+              fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+              fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
 
-            begin
-              options = ::ActivePublisher.publishing_options(message.route, message.options || {})
-              exchange.publish(message.payload, options)
-              potentially_retry << message
-            rescue
-              messages << message
-              raise
+              begin
+                options = ::ActivePublisher.publishing_options(message.route, message.options || {})
+                exchange.publish(message.payload, options)
+                potentially_retry << message
+              rescue
+                messages << message
+                raise
+              end
             end
+            wait_for_confirms(channel, messages, potentially_retry)
           end
-          wait_for_confirms(channel, messages, potentially_retry)
         end
 
         def wait_for_confirms(channel, messages, potentially_retry)

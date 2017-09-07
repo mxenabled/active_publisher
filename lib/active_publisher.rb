@@ -3,6 +3,7 @@ if ::RUBY_PLATFORM == "java"
 else
   require "bunny"
 end
+require "active_support"
 require "thread"
 
 require "active_publisher/logging"
@@ -34,7 +35,9 @@ module ActivePublisher
   # @param [Hash] options hash to set message parameters (e.g. headers)
   def self.publish(route, payload, exchange_name, options = {})
     with_exchange(exchange_name) do |exchange|
-      exchange.publish(payload, publishing_options(route, options))
+      ::ActiveSupport::Notifications.instrument "message_published.active_publisher" do
+        exchange.publish(payload, publishing_options(route, options))
+      end
     end
   end
 
@@ -48,7 +51,9 @@ module ActivePublisher
         fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
 
         begin
-          exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
+          ::ActiveSupport::Notifications.instrument "message_published.active_publisher" do
+            exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
+          end
         rescue
           messages << message
           raise
