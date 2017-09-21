@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ## Configuration
 
-ActivePublisher will use a `config/active_publisher.yml` or `config/action_subscriber.yml` automatically.
+ActivePublisher will use a `config/active_publisher.yml` or `config/action_subscriber.yml` if you include the line `::ActivePublisher::Configuration.configure_from_yaml_and_cli` in an initializer.
 
 Create a `config/active_publisher.yml` similar to a database.yml, with your configuration nested in your environments keys.
 
