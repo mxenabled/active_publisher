@@ -26,5 +26,16 @@ describe ::ActivePublisher::Configuration do
       expect(::ActivePublisher.configuration).to receive(:password=).with("WAT").and_return(true)
       ::ActivePublisher::Configuration.configure_from_yaml_and_cli({"password" => "WAT"}, true)
     end
+
+    context "when using a yaml file" do
+      let!(:sample_yaml_location) { ::File.expand_path(::File.join("spec", "support", "sample_config.yml")) }
+
+      before { allow(::File).to receive(:expand_path) { sample_yaml_location } }
+
+      it "parses any ERB in the yaml" do
+        expect(::ActivePublisher.configuration).to receive(:password=).with("WAT").and_return(true)
+        ::ActivePublisher::Configuration.configure_from_yaml_and_cli({}, true)
+      end
+    end
   end
 end
