@@ -68,12 +68,13 @@ module ActivePublisher
                 # Requeue and try again.
                 queue.concat(current_messages)
               rescue => unknown_error
+                ::ActivePublisher.configuration.error_handler.call(unknown_error, {:number_of_messages => current_messages.size})
                 current_messages.each do |message|
                   # Degrade to single message publish ... or at least attempt to
                   begin
                     ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
-                  rescue
-                    ::ActivePublisher.configuration.error_handler.call(unknown_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
+                  rescue => individual_error
+                    ::ActivePublisher.configuration.error_handler.call(individual_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
                   end
                 end
 
