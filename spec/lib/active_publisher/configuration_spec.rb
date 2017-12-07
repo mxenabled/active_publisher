@@ -3,6 +3,7 @@ describe ::ActivePublisher::Configuration do
     specify { expect(subject.heartbeat).to eq(5) }
     specify { expect(subject.host).to eq("localhost") }
     specify { expect(subject.hosts).to eq(["localhost"]) }
+    specify { expect(subject.network_recovery_interval).to eq(1) }
     specify { expect(subject.port).to eq(5672) }
     specify { expect(subject.timeout).to eq(1) }
     specify { expect(subject.tls).to eq(false) }

@@ -3,7 +3,6 @@ require 'thread'
 module ActivePublisher
   module Connection
     CONNECTION_MUTEX = ::Mutex.new
-    NETWORK_RECOVERY_INTERVAL = 1.freeze
 
     def self.connected?
       connection.try(:connected?)
@@ -46,7 +45,7 @@ module ActivePublisher
         :continuation_timeout          => ::ActivePublisher.configuration.timeout * 1_000.0, #convert sec to ms
         :heartbeat                     => ::ActivePublisher.configuration.heartbeat,
         :hosts                         => ::ActivePublisher.configuration.hosts,
-        :network_recovery_interval     => NETWORK_RECOVERY_INTERVAL,
+        :network_recovery_interval     => ::ActivePublisher.configuration.network_recovery_interval,
         :pass                          => ::ActivePublisher.configuration.password,
         :port                          => ::ActivePublisher.configuration.port,
         :recover_from_connection_close => true,
