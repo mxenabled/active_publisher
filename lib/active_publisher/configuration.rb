@@ -6,6 +6,7 @@ module ActivePublisher
                   :heartbeat,
                   :host,
                   :hosts,
+                  :network_recovery_interval,
                   :password,
                   :port,
                   :publisher_confirms,
@@ -21,6 +22,7 @@ module ActivePublisher
                   :virtual_host
 
     CONFIGURATION_MUTEX = ::Mutex.new
+    NETWORK_RECOVERY_INTERVAL = 1.freeze
 
     DEFAULTS = {
       :error_handler => lambda { |error, env_hash|
@@ -32,6 +34,7 @@ module ActivePublisher
       :host => "localhost",
       :hosts => [],
       :password => "guest",
+      :network_recovery_interval => NETWORK_RECOVERY_INTERVAL,
       :port => 5672,
       :publisher_confirms => false,
       :publisher_confirms_timeout => 5_000, #specified as a number of milliseconds
