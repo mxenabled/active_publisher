@@ -51,6 +51,7 @@ Defaults for the configuration are:
   :heartbeat => 5,
   :host => "localhost",
   :hosts => [],
+  :network_recovery_interval => 1,
   :password => "guest",
   :port => 5672,
   :publisher_confirms => false,
@@ -110,4 +111,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/[USERN
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
