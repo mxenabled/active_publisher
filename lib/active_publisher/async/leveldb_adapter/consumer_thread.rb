@@ -86,17 +86,10 @@ module ActivePublisher
                 rescue *NETWORK_ERRORS
                   # Sleep because connection is down
                   await_network_reconnect
-
-                rescue => unknown_error
-                  ::ActivePublisher.configuration.error_handler.call(unknown_error, {})
-
-                  # TODO: Find a way to bubble this out of the thread for logging purposes.
-                  # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
-                  raise unknown_error
                 end
               end
-            rescue => e
-              ::ActivePublisher.configuration.error_handler.call(e, {})
+            rescue => unknown_error
+              ::ActivePublisher.configuration.error_handler.call(unknown_error, {})
             end
           end
         end
