@@ -6,7 +6,7 @@ module ActivePublisher
         QUEUE_MESSAGE_PREFIX = "m!"
         MAX_MESSAGE_RETRIES = 10
 
-        attr_accessor :drop_messages_when_queue_full,
+        attr_accessor :back_pressure_strategy,
           :max_queue_size,
           :supervisor_interval
 
@@ -23,6 +23,7 @@ module ActivePublisher
         end
 
         def initialize(drop_messages_when_queue_full, max_queue_size, supervisor_interval)
+          @back_pressure_strategy = back_pressure_strategy
           @queue = self
           @drop_messages_when_queue_full = drop_messages_when_queue_full
           @supervisor_interval = supervisor_interval
@@ -44,6 +45,9 @@ module ActivePublisher
                 consumer.kill
                 @consumer = ::ActivePublisher::Async::LeveldbAdapter::ConsumerThread.new(self)
               end
+
+              # Notify the current queue size.
+              ::ActiveSupport::Notifications.instrument "async_queue_size.active_publisher", size
 
               # Pause before checking the consumer again.
               sleep supervisor_interval
@@ -101,10 +105,20 @@ module ActivePublisher
         end
 
         def push(message)
-          if size >= @max_size
-            # Drop messages if the queue is full and we were configured to do so
-            return if @drop_messages_when_queue_full
-            fail "Queue is full, messages will be dropped."
+          if size >= max_queue_size
+            case back_pressure_strategy
+            when :drop
+              ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
+              return
+            when :raise
+              ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
+              fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Queue is full, messages will be dropped."
+            when :wait
+              ::ActiveSupport::Notifications.instrument "wait_for_async_queue.active_publisher" do
+                # This is a really crappy way to wait
+                sleep 0.01 until size < max_queue_size
+              end
+            end
           end
 
           @mutex.synchronize do
