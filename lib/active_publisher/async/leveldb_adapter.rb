@@ -1,5 +1,6 @@
 require "leveldb"
 require "time"
+require "json"
 
 require "active_publisher/async/leveldb_adapter/async_queue"
 require "active_publisher/async/leveldb_adapter/consumer_thread"

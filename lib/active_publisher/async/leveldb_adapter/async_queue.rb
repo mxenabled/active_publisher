@@ -10,7 +10,7 @@ module ActivePublisher
           :max_queue_size,
           :supervisor_interval
 
-        attr_reader :consumer, :supervisor
+        attr_reader :consumer, :supervisor, :size
 
         # This is to keep metrics working. The "queue" is a ref to ourself.
         attr_reader :queue
@@ -27,8 +27,9 @@ module ActivePublisher
           @queue = self
           @drop_messages_when_queue_full = drop_messages_when_queue_full
           @supervisor_interval = supervisor_interval
+          @max_queue_size = max_queue_size
           @mutex = Mutex.new
-          @db = ::LevelDB::DB.new(db_full_path)
+          @db = ::LevelDB::DB.new(self.class.db_full_path)
 
           # Load defaults
           @size = @db.get(QUEUE_SIZE_KEY).to_i
@@ -71,17 +72,17 @@ module ActivePublisher
 
         def delete(key)
           @mutex.synchronize do
-            return if @db.has_key?(key)
+            return unless @db.has_key?(key)
 
             @db.batch do |batch|
-              batch.put(QUEUE_SIZE_KEY, @size += 1)
+              batch.put(QUEUE_SIZE_KEY, @size -= 1)
               batch.delete(key)
             end
           end
         end
 
         def empty?
-          @size == 0
+          size == 0
         end
 
         def next_batch_with_prefix(prefix, n)
@@ -121,6 +122,10 @@ module ActivePublisher
             end
           end
 
+          unless message.is_a?(::ActivePublisher::Async::LeveldbAdapter::Message)
+            fail ::ActivePublisher::UnknownMessageClassError, "Leveldb async queue only works with ActivePublisher::Async::LeveldbAdapter::Message"
+          end
+
           @mutex.synchronize do
             @db.batch do |batch|
               payload = message.to_json
@@ -132,9 +137,9 @@ module ActivePublisher
         end
 
         def retry(key, message)
-          return if message.retries > MAX_MESSAGE_RETRIES
-          offset = (message.retries ** 4) + 15 + (rand(30) * (message.retries + 1))
+          return delete(key) if message.retries > MAX_MESSAGE_RETRIES
 
+          offset = (message.retries ** 4) + 15 + (rand(30) * (message.retries + 1))
           message.retries += 1
           payload = message.to_json
           next_attempt_at = ::Time.now + offset
