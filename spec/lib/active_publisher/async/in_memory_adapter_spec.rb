@@ -76,7 +76,9 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           # Prevent heartbeats from getting back to the supervisor.
           allow(consumer).to receive(:send_heartbeat)
 
-          # Heartbeat sends once on startup, so wait for that to get processed first.
+          # Heartbeat sends once on startup, but threads are hard to reason about, so we'll
+          # kick one off anyway just to be safe.
+          consumer.heartbeats << :hi
           current_time = ::Time.now
           verify_expectation_within(1) do
             expect(subject.last_heartbeat_at).to be > current_time
