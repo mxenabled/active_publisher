@@ -73,7 +73,9 @@ module ActivePublisher
 
             # Consumer is lagging if we have not received a heartbeat from the consumer thread in more than
             # 10 seconds.
-            consumer_is_lagging = (current_time - @last_heartbeat_at) > 10
+            seconds_since_last_heartbeat = current_time - @last_heartbeat_at
+            consumer_is_lagging = seconds_since_last_heartbeat > 10
+            logger.error "ActivePublisher consumer is lagging. Last heartbeat received #{seconds_since_last_heartbeat} seconds ago." if consumer_is_lagging
 
             # Check to see if we should restart the consumer.
             if !consumer.alive? || consumer_is_lagging
