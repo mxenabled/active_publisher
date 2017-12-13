@@ -12,7 +12,8 @@ module ActivePublisher
 
         attr_accessor :back_pressure_strategy,
           :max_queue_size,
-          :supervisor_interval
+          :supervisor_interval,
+          :last_heartbeat_at
 
         attr_reader :consumer, :queue, :supervisor
 

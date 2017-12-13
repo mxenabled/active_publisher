@@ -76,10 +76,14 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           # Prevent heartbeats from getting back to the supervisor.
           allow(consumer).to receive(:send_heartbeat)
 
-          # Speed up time to "9.8 seconds without a heartbeat"
-          subject.instance_eval do
-            @last_heartbeat_at = ::Time.now - 9.8
+          # Heartbeat sends once on startup, so wait for that to get processed first.
+          current_time = ::Time.now
+          verify_expectation_within(1) do
+            expect(subject.last_heartbeat_at).to be > current_time
           end
+
+          # Speed up time to 20 seconds without a heartbeat
+          subject.last_heartbeat_at = current_time - 20
 
           verify_expectation_within(0.5) do
             # Verify a new consumer is created.
@@ -88,16 +92,16 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         end
 
         it "the consumer sends a heartbeat every 100ms" do
-          time1 = subject.instance_variable_get(:@last_heartbeat_at)
+          time1 = subject.last_heartbeat_at
 
           time2 = nil
           verify_expectation_within(0.5) do
-            time2 = subject.instance_variable_get(:@last_heartbeat_at)
+            time2 = subject.last_heartbeat_at
             expect(time2).to be > time1
           end
 
           verify_expectation_within(0.5) do
-            time3 = subject.instance_variable_get(:@last_heartbeat_at)
+            time3 = subject.last_heartbeat_at
             expect(time3).to be > time2
           end
         end
@@ -118,7 +122,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         before { allow(consumer).to receive(:publish_all).and_raise(error) }
 
         it "requeues the message" do
-          consumer = subject.consumer
           expect(consumer).to be_alive
           subject.push(message)
           sleep 0.1 # Await results
@@ -131,8 +134,9 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         it "kills the consumer" do
           expect(consumer).to be_alive
           subject.push(message)
-          sleep 0.1 # Await results
-          expect(consumer).to_not be_alive
+          verify_expectation_within(0.5) do
+            expect(consumer).to_not be_alive
+          end
         end
       end
     end
