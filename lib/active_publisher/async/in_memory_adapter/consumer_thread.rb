@@ -54,8 +54,6 @@ module ActivePublisher
               @sampled_queue_size = queue.size
               current_messages = queue.pop_up_to(50)
 
-              send_heartbeat
-
               begin
                 @channel ||= make_channel
 
@@ -89,6 +87,8 @@ module ActivePublisher
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
                 raise unknown_error
               end
+
+              send_heartbeat
             end
           end
         end
