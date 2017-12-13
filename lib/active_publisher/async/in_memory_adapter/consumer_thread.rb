@@ -2,7 +2,7 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class ConsumerThread
-        attr_reader :thread, :queue, :sampled_queue_size
+        attr_reader :thread, :queue, :sampled_queue_size, :heartbeats
 
         if ::RUBY_PLATFORM == "java"
           NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
@@ -13,6 +13,7 @@ module ActivePublisher
         def initialize(listen_queue)
           @queue = listen_queue
           @sampled_queue_size = queue.size
+          @heartbeats = []
           start_thread
         end
 
@@ -41,6 +42,10 @@ module ActivePublisher
           channel
         end
 
+        def send_heartbeat
+          @heartbeats << :hello
+        end
+
         def start_thread
           return if alive?
           @thread = ::Thread.new do
@@ -48,6 +53,8 @@ module ActivePublisher
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
               current_messages = queue.pop_up_to(50)
+
+              send_heartbeat
 
               begin
                 @channel ||= make_channel

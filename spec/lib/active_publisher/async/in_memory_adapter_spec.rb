@@ -70,6 +70,65 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           expect(subject.consumer).to be_alive
         end
       end
+
+      context "lagging consumer" do
+        it "restarts the consumer when the consumer is lagging" do
+          expect(subject.consumer.__id__).to eq(consumer.__id__)
+
+          expect(consumer).to receive(:kill).and_call_original
+          subject.instance_eval do
+            current_time = ::Time.now
+            @last_pushed_at = current_time
+            @last_heartbeat_at = current_time - 21
+          end
+
+          verify_expectation_within(2) do
+            # Verify a new consumer is created.
+            expect(subject.consumer.__id__).to_not eq(consumer.__id__)
+          end
+
+          time_since_push = ::Time.now - subject.instance_variable_get(:@last_pushed_at)
+          expect(time_since_push).to be < 1
+          time_since_heartbeat = ::Time.now - subject.instance_variable_get(:@last_heartbeat_at)
+          expect(time_since_heartbeat).to be < 1
+        end
+
+        it "updates the last_heartbeat_at and last_pushed_at times" do
+          expect(subject.consumer.__id__).to eq(consumer.__id__)
+
+          expect(consumer).to_not receive(:kill).and_call_original
+          subject.instance_eval do
+            current_time = ::Time.now
+            @last_pushed_at = current_time - 9.8
+            @last_heartbeat_at = current_time - 20
+          end
+
+          subject.push(message)
+
+          verify_expectation_within(0.3) do
+            time_since_push = ::Time.now - subject.instance_variable_get(:@last_pushed_at)
+            expect(time_since_push).to be < 1
+            time_since_heartbeat = ::Time.now - subject.instance_variable_get(:@last_heartbeat_at)
+            expect(time_since_heartbeat).to be < 1
+          end
+
+          expect(subject.consumer.__id__).to eq(consumer.__id__)
+        end
+
+        it "does not restart the consumer if we haven't pushed in over 10 seconds and we processed all messages" do
+          expect(subject.consumer.__id__).to eq(consumer.__id__)
+
+          expect(consumer).to_not receive(:kill).and_call_original
+          subject.instance_eval do
+            current_time = ::Time.now
+            @last_pushed_at = current_time - 900
+            @last_heartbeat_at = current_time - 899
+          end
+          sleep 0.2 # Wait for the supervisor to tick
+
+          expect(subject.consumer.__id__).to eq(consumer.__id__)
+        end
+      end
     end
 
     describe "#create_consumer" do
