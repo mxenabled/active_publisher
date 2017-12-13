@@ -43,6 +43,7 @@ module ActivePublisher
         end
 
         def send_heartbeat
+          return unless @heartbeats.empty?
           @heartbeats << :hello
         end
 
