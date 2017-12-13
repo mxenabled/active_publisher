@@ -50,6 +50,10 @@ module ActivePublisher
           return if alive?
           @thread = ::Thread.new do
             loop do
+              # If the queue is empty, we should continue to send heartbeats to the consumer.
+              send_heartbeat
+              next sleep 0.1 if queue.empty?
+
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
               current_messages = queue.pop_up_to(50)
@@ -87,8 +91,6 @@ module ActivePublisher
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
                 raise unknown_error
               end
-
-              send_heartbeat
             end
           end
         end

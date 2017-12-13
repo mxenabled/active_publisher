@@ -72,61 +72,34 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "lagging consumer" do
-        it "restarts the consumer when the consumer is lagging" do
-          expect(subject.consumer.__id__).to eq(consumer.__id__)
+        it "restarts the consumer when it's lagging" do
+          # Prevent heartbeats from getting back to the supervisor.
+          allow(consumer).to receive(:send_heartbeat)
 
-          expect(consumer).to receive(:kill).and_call_original
+          # Speed up time to "9.8 seconds without a heartbeat"
           subject.instance_eval do
-            current_time = ::Time.now
-            @last_pushed_at = current_time
-            @last_heartbeat_at = current_time - 21
+            @last_heartbeat_at = ::Time.now - 9.8
           end
 
-          verify_expectation_within(2) do
+          verify_expectation_within(0.5) do
             # Verify a new consumer is created.
             expect(subject.consumer.__id__).to_not eq(consumer.__id__)
           end
-
-          time_since_push = ::Time.now - subject.instance_variable_get(:@last_pushed_at)
-          expect(time_since_push).to be < 1
-          time_since_heartbeat = ::Time.now - subject.instance_variable_get(:@last_heartbeat_at)
-          expect(time_since_heartbeat).to be < 1
         end
 
-        it "updates the last_heartbeat_at and last_pushed_at times" do
-          expect(subject.consumer.__id__).to eq(consumer.__id__)
+        it "the consumer sends a heartbeat every 100ms" do
+          time1 = subject.instance_variable_get(:@last_heartbeat_at)
 
-          expect(consumer).to_not receive(:kill).and_call_original
-          subject.instance_eval do
-            current_time = ::Time.now
-            @last_pushed_at = current_time - 9.8
-            @last_heartbeat_at = current_time - 20
+          time2 = nil
+          verify_expectation_within(0.5) do
+            time2 = subject.instance_variable_get(:@last_heartbeat_at)
+            expect(time2).to be > time1
           end
 
-          subject.push(message)
-
-          verify_expectation_within(0.3) do
-            time_since_push = ::Time.now - subject.instance_variable_get(:@last_pushed_at)
-            expect(time_since_push).to be < 1
-            time_since_heartbeat = ::Time.now - subject.instance_variable_get(:@last_heartbeat_at)
-            expect(time_since_heartbeat).to be < 1
+          verify_expectation_within(0.5) do
+            time3 = subject.instance_variable_get(:@last_heartbeat_at)
+            expect(time3).to be > time2
           end
-
-          expect(subject.consumer.__id__).to eq(consumer.__id__)
-        end
-
-        it "does not restart the consumer if we haven't pushed in over 10 seconds and we processed all messages" do
-          expect(subject.consumer.__id__).to eq(consumer.__id__)
-
-          expect(consumer).to_not receive(:kill).and_call_original
-          subject.instance_eval do
-            current_time = ::Time.now
-            @last_pushed_at = current_time - 900
-            @last_heartbeat_at = current_time - 899
-          end
-          sleep 0.2 # Wait for the supervisor to tick
-
-          expect(subject.consumer.__id__).to eq(consumer.__id__)
         end
       end
     end

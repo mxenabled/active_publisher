@@ -46,7 +46,6 @@ module ActivePublisher
             end
           end
 
-          @last_pushed_at = ::Time.now
           queue.push(message)
         end
 
@@ -61,9 +60,7 @@ module ActivePublisher
 
         def create_and_supervise_consumer!
           @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-          @last_pushed_at = ::Time.now
           @last_heartbeat_at = ::Time.now
-          @ticks_before_restart = 5
 
           supervisor_task = ::Concurrent::TimerTask.new(:execution_interval => supervisor_interval) do
             current_time = ::Time.now
@@ -74,21 +71,15 @@ module ActivePublisher
               consumer.heartbeats.clear
             end
 
-            # Consumer is lagging if all of the following are true:
-            # 1. We have not received a heartbeat from the consumer thread in more than 10 seconds.
-            # 2. A message has been pushed onto the queue since the last heartbeat message.
-            # 3. The supervisor has waited 5 "ticks" since (1) and (2) became true.
-            consumer_is_lagging = (current_time - @last_heartbeat_at) > 10 &&
-                                  (@last_heartbeat_at < @last_pushed_at) &&
-                                  (@ticks_before_restart -=1) <= 0
+            # Consumer is lagging if we have not received a heartbeat from the consumer thread in more than
+            # 10 seconds.
+            consumer_is_lagging = (current_time - @last_heartbeat_at) > 10
 
             # Check to see if we should restart the consumer.
             if !consumer.alive? || consumer_is_lagging
               consumer.kill
               @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-              @last_pushed_at = ::Time.now
               @last_heartbeat_at = ::Time.now
-              @ticks_before_restart = 5
             end
 
             # Notify the current queue size.
