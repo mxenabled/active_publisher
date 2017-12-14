@@ -58,6 +58,9 @@ module ActivePublisher
               # If the queue is empty, we should continue to update to "last_tick_at" time.
               next if current_messages.nil?
 
+              # We only look at active publisher messages. Everything else is dropped.
+              current_messages.select! { |message| message.is_a?(::ActivePublisher::Message) }
+
               begin
                 @channel ||= make_channel
 
@@ -96,12 +99,6 @@ module ActivePublisher
           ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :message_count => messages.size do
             exchange = channel.topic(exchange_name)
             messages.each do |message|
-              # If we were given a bad message, it's important that we drop it right away to prevent it from retrying later.
-              unless message.is_a?(ActivePublisher::Message)
-                messages.delete(message)
-                fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message"
-              end
-
               fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
 
               options = ::ActivePublisher.publishing_options(message.route, message.options || {})

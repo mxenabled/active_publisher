@@ -118,10 +118,19 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         end
       end
 
+      context "when a malformed message is enqueued" do
+        it "deletes the message and raises an error" do
+          subject.queue.push(:yolo_dude)
+          verify_expectation_within(0.5) do
+            expect(subject.queue.size).to eq(0)
+          end
+        end
+      end
+
       context "when an unknown error occurs" do
         before { allow(consumer).to receive(:publish_all).and_raise(::ArgumentError) }
 
-        it "removes the message from the queue" do
+        it "processes the message and removes it from the queue" do
           expect(::ActivePublisher).to receive(:publish).with("test", "payload", "place", {:test => :ok}).and_call_original
           subject.push(message)
           verify_expectation_within(0.5) do
