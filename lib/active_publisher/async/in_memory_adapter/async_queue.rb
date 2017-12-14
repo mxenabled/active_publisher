@@ -12,8 +12,7 @@ module ActivePublisher
 
         attr_accessor :back_pressure_strategy,
           :max_queue_size,
-          :supervisor_interval,
-          :last_heartbeat_at
+          :supervisor_interval
 
         attr_reader :consumer, :queue, :supervisor
 
@@ -61,28 +60,19 @@ module ActivePublisher
 
         def create_and_supervise_consumer!
           @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-          @last_heartbeat_at = ::Time.now
 
           supervisor_task = ::Concurrent::TimerTask.new(:execution_interval => supervisor_interval) do
             current_time = ::Time.now
 
-            # Process heartbeats from the consumer.
-            if !consumer.heartbeats.empty?
-              @last_heartbeat_at = current_time
-              consumer.heartbeats.clear
-            end
-
-            # Consumer is lagging if we have not received a heartbeat from the consumer thread in more than
-            # 10 seconds.
-            seconds_since_last_heartbeat = current_time - @last_heartbeat_at
-            consumer_is_lagging = seconds_since_last_heartbeat > 10
-            logger.error "ActivePublisher consumer is lagging. Last heartbeat received #{seconds_since_last_heartbeat} seconds ago." if consumer_is_lagging
+            # Consumer is lagging if it does not "tick" at least once every 10 seconds.
+            seconds_since_tock = current_time - consumer.last_tick_at
+            consumer_is_lagging = seconds_since_tock > 10
+            logger.error "ActivePublisher consumer is lagging. Last consumer tick was #{seconds_since_tock} seconds ago." if consumer_is_lagging
 
             # Check to see if we should restart the consumer.
             if !consumer.alive? || consumer_is_lagging
               consumer.kill
               @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-              @last_heartbeat_at = ::Time.now
             end
 
             # Notify the current queue size.

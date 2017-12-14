@@ -73,19 +73,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
       context "lagging consumer" do
         it "restarts the consumer when it's lagging" do
-          # Prevent heartbeats from getting back to the supervisor.
-          allow(consumer).to receive(:send_heartbeat)
-
-          # Heartbeat sends once on startup, but threads are hard to reason about, so we'll
-          # kick one off anyway just to be safe.
-          consumer.heartbeats << :hi
-          current_time = ::Time.now
-          verify_expectation_within(1) do
-            expect(subject.last_heartbeat_at).to be > current_time
-          end
-
-          # Speed up time to 20 seconds without a heartbeat
-          subject.last_heartbeat_at = current_time - 20
+          allow(consumer).to receive(:last_tick_at).and_return(::Time.now - 20)
 
           verify_expectation_within(0.5) do
             # Verify a new consumer is created.
@@ -93,17 +81,17 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           end
         end
 
-        it "the consumer sends a heartbeat every 100ms" do
-          time1 = subject.last_heartbeat_at
+        it "updates the last_tick_at time every 100ms" do
+          time1 = consumer.last_tick_at
 
           time2 = nil
           verify_expectation_within(0.5) do
-            time2 = subject.last_heartbeat_at
+            time2 = consumer.last_tick_at
             expect(time2).to be > time1
           end
 
           verify_expectation_within(0.5) do
-            time3 = subject.last_heartbeat_at
+            time3 = consumer.last_tick_at
             expect(time3).to be > time2
           end
         end

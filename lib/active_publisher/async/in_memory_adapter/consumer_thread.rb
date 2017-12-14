@@ -2,7 +2,7 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class ConsumerThread
-        attr_reader :thread, :queue, :sampled_queue_size, :heartbeats
+        attr_reader :thread, :queue, :sampled_queue_size, :last_tick_at
 
         if ::RUBY_PLATFORM == "java"
           NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
@@ -13,7 +13,8 @@ module ActivePublisher
         def initialize(listen_queue)
           @queue = listen_queue
           @sampled_queue_size = queue.size
-          @heartbeats = []
+
+          update_last_tick_at
           start_thread
         end
 
@@ -42,17 +43,16 @@ module ActivePublisher
           channel
         end
 
-        def send_heartbeat
-          return unless @heartbeats.empty?
-          @heartbeats << :hello
+        def update_last_tick_at
+          @last_tick_at = ::Time.now
         end
 
         def start_thread
           return if alive?
           @thread = ::Thread.new do
             loop do
-              # If the queue is empty, we should continue to send heartbeats to the consumer.
-              send_heartbeat
+              # If the queue is empty, we should continue to update to "last_tick_at" time.
+              update_last_tick_at
               next sleep 0.1 if queue.empty?
 
               # Sample the queue size so we don't shutdown when messages are in flight.
