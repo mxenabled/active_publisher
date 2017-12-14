@@ -51,13 +51,12 @@ module ActivePublisher
           return if alive?
           @thread = ::Thread.new do
             loop do
-              # If the queue is empty, we should continue to update to "last_tick_at" time.
-              update_last_tick_at
-              next sleep 0.1 if queue.empty?
-
               # Sample the queue size so we don't shutdown when messages are in flight.
               @sampled_queue_size = queue.size
-              current_messages = queue.pop_up_to(50)
+              current_messages = queue.pop_up_to(50, :timeout => 0.1)
+              update_last_tick_at
+              # If the queue is empty, we should continue to update to "last_tick_at" time.
+              next if current_messages.nil?
 
               begin
                 @channel ||= make_channel
