@@ -65,9 +65,9 @@ module ActivePublisher
             current_time = ::Time.now
 
             # Consumer is lagging if it does not "tick" at least once every 10 seconds.
-            seconds_since_tock = current_time - consumer.last_tick_at
-            consumer_is_lagging = seconds_since_tock > 10
-            logger.error "ActivePublisher consumer is lagging. Last consumer tick was #{seconds_since_tock} seconds ago." if consumer_is_lagging
+            seconds_since_last_tick = current_time - consumer.last_tick_at
+            consumer_is_lagging = seconds_since_last_tick > ::ActivePublisher.configuration.max_async_publisher_lag_time
+            logger.error "ActivePublisher consumer is lagging. Last consumer tick was #{seconds_since_last_tick} seconds ago." if consumer_is_lagging
 
             # Check to see if we should restart the consumer.
             if !consumer.alive? || consumer_is_lagging
