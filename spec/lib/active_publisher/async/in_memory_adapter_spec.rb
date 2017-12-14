@@ -121,11 +121,32 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       context "when an unknown error occurs" do
         before { allow(consumer).to receive(:publish_all).and_raise(::ArgumentError) }
 
+        it "removes the message from the queue" do
+          expect(::ActivePublisher).to receive(:publish).with("test", "payload", "place", {:test => :ok}).and_call_original
+          subject.push(message)
+          verify_expectation_within(0.5) do
+            expect(subject.size).to eq(0)
+          end
+        end
+
         it "kills the consumer" do
           expect(consumer).to be_alive
           subject.push(message)
           verify_expectation_within(0.5) do
             expect(consumer).to_not be_alive
+          end
+        end
+
+        context "and single message publish fails" do
+          before { allow(::ActivePublisher).to receive(:publish).and_raise(::RuntimeError) }
+
+          it "enqueues the message again" do
+            first_tick_at = consumer.last_tick_at
+            subject.push(message)
+            verify_expectation_within(0.5) do
+              expect(consumer.last_tick_at).to be > first_tick_at
+              expect(subject.size).to eq(1)
+            end
           end
         end
       end
