@@ -5,9 +5,17 @@ module ActivePublisher
         attr_reader :thread, :queue, :sampled_queue_size, :last_tick_at
 
         if ::RUBY_PLATFORM == "java"
-          NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
+          NETWORK_ERRORS = [::MarchHare::NetworkException, ::MarchHare::ConnectionRefused,
+                            ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
         else
-          NETWORK_ERRORS = [::Bunny::Exception, ::Timeout::Error, ::IOError].freeze
+          NETWORK_ERRORS = [::Bunny::NetworkFailure, ::Bunny::TCPConnectionFailed, ::Bunny::ConnectionTimeout,
+                            ::Timeout::Error, ::IOError].freeze
+        end
+
+        if ::RUBY_PLATFORM == "java"
+          PRECONDITION_ERRORS = [::MarchHare::PreconditionFailed]
+        else
+          PRECONDITION_ERRORS = [::Bunny::PreconditionFailed]
         end
 
         def initialize(listen_queue)
@@ -78,6 +86,10 @@ module ActivePublisher
                   # Degrade to single message publish ... or at least attempt to
                   begin
                     ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
+                    current_messages.delete(message)
+                  rescue *PRECONDITION_ERRORS => error
+                    # Delete messages if rabbitmq cannot declare the exchange (or somet other precondition failed).
+                    ::ActivePublisher.configuration.error_handler.call(error, {:reason => "precondition failed", :message => message})
                     current_messages.delete(message)
                   rescue => individual_error
                     ::ActivePublisher.configuration.error_handler.call(individual_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})

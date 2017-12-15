@@ -9,6 +9,8 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   let(:back_pressure_strategy) { :raise }
   let(:max_queue_size) { 100 }
 
+  after { ::ActivePublisher::Connection.disconnect! }
+
   describe ".new" do
     context "defaults" do
       it "sets a default max queue size" do
@@ -115,6 +117,34 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           expect(consumer).to be_alive
           subject.push(message)
           sleep 0.1 # Await results
+        end
+      end
+
+      context "when a precondition errors occurs" do
+        let(:bad_exchange_name) { "now_thats_what_i_call_music" }
+        let(:bad_message) { ::ActivePublisher::Message.new(route, payload, bad_exchange_name, options) }
+
+        it "only drops the bad message" do
+          # Declare a fanout exchange so the consumer thread will choke tring to declare a topic exchange.
+          channel = ::ActivePublisher::Connection.connection.create_channel
+          channel.fanout(bad_exchange_name)
+
+          reason = nil
+          collected_messages = []
+          allow(::ActivePublisher.configuration.error_handler).to receive(:call) do |err, options|
+            reason = options[:reason]
+            collected_messages << options[:message] if options[:message]
+          end
+
+          messages = [message, bad_message]
+          subject.queue.concat(messages)
+
+          verify_expectation_within(5) do
+            expect(reason).to eq("precondition failed")
+            expect(subject.queue.size).to eq(0)
+          end
+
+          expect(collected_messages).to eq([bad_message])
         end
       end
 
