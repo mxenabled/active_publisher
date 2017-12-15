@@ -1,5 +1,4 @@
 require "concurrent"
-require "msgpack"
 require "active_publisher/message"
 
 module ActivePublisher
@@ -33,7 +32,7 @@ module ActivePublisher
           def concat(messages)
             encoded_messages = []
             messages.each do |message|
-              encoded_messages << ::MessagePack.pack(message) 
+              encoded_messages << ::Marshal.dump(message)
             end
 
             redis_pool.with do |redis|
@@ -76,7 +75,7 @@ module ActivePublisher
               messages = redis.spop(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, number)
             end
 
-            messages.map { |message| ::MessagePack.unpack(messsage) }
+            messages.map { |message| ::Marshal.load(messsage) }
           end
 
           def size
@@ -90,7 +89,7 @@ module ActivePublisher
           include ::Concurrent::Async
 
           def push(redis_connection_pool, message)
-            encoded_message = ::MessagePack.pack(message) 
+            encoded_message = ::Marshal.dump(message)
             redis_connection_pool.with do |redis|
               redis.sadd(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, message)
             end
@@ -98,12 +97,12 @@ module ActivePublisher
             ::ActivePublisher::Async::RedisAdapter.waiting_message_count.decrement
           end
         end
-        
+
         ##
-        # Use a "pool" of 2 async publisher objects that get fairly balanced with `with` method
+        # Use a "pool" of 5 async publisher objects that get fairly balanced with `with` method
         #
         POOL = ::Queue.new
-        POOL_SIZE = 10
+        POOL_SIZE = 5
         POOL_SIZE.times { POOL << ::ActivePublisher::Async::RedisAdapter::Adapter::RedisWriter.new }
 
         def self.with
