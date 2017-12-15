@@ -120,6 +120,21 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         end
       end
 
+      context "when a channel closes" do
+        it "crashes the consumer" do
+          subject.push(message)
+          verify_expectation_within(0.5) do
+            expect(subject.size).to eq(0)
+          end
+
+          consumer.instance_variable_get(:@channel).close
+          subject.push(message)
+          verify_expectation_within(0.5) do
+            expect(subject.consumer.__id__).to_not eq(consumer.__id__)
+          end
+        end
+      end
+
       context "when a precondition errors occurs" do
         let(:bad_exchange_name) { "now_thats_what_i_call_music" }
         let(:bad_message) { ::ActivePublisher::Message.new(route, payload, bad_exchange_name, options) }
