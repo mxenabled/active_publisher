@@ -20,19 +20,7 @@ module ActivePublisher
 
         attr_reader :async_queue, :redis_pool
 
-        ##
-        # Use a "pool" of 5 async publisher objects that get fairly balanced with `with` method
-        #
-        POOL = ::Queue.new
-        POOL_SIZE = 5
-        POOL_SIZE.times { POOL << ::ActivePublisher::Async::RedisAdapter::Adapter::RedisAsyncWriter.new }
-
-        def self.with
-          writer = nil
-          yield writer = POOL.pop
-        ensure
-          POOL.push(writer) if writer
-        end
+        REDIS_ASYNC_WRITER = ::ActivePublisher::Async::RedisAdapter::Adapter::RedisAsyncWriter.new
 
         def initialize(new_redis_pool, supervisor_interval = 0.2)
           logger.info "Starting redis publisher adapter"
@@ -43,9 +31,7 @@ module ActivePublisher
         def publish(route, payload, exchange_name, options = {})
           ::ActivePublisher::Async::RedisAdapter.waiting_message_count.increment
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
-          self.with do |writer|
-            writer.push(redis_pool, message)
-          end
+          REDIS_ASYNC_WRITER.push(redis_pool, message)
 
           nil
         end
