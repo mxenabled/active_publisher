@@ -5,9 +5,17 @@ module ActivePublisher
         attr_reader :thread, :queue, :sampled_queue_size, :last_tick_at
 
         if ::RUBY_PLATFORM == "java"
-          NETWORK_ERRORS = [::MarchHare::Exception, ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
+          NETWORK_ERRORS = [::MarchHare::NetworkException, ::MarchHare::ConnectionRefused,
+                            ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
         else
-          NETWORK_ERRORS = [::Bunny::Exception, ::Timeout::Error, ::IOError].freeze
+          NETWORK_ERRORS = [::Bunny::NetworkFailure, ::Bunny::TCPConnectionFailed, ::Bunny::ConnectionTimeout,
+                            ::Timeout::Error, ::IOError].freeze
+        end
+
+        if ::RUBY_PLATFORM == "java"
+          PRECONDITION_ERRORS = [::MarchHare::PreconditionFailed]
+        else
+          PRECONDITION_ERRORS = [::Bunny::PreconditionFailed]
         end
 
         def initialize(listen_queue)
@@ -58,30 +66,31 @@ module ActivePublisher
               # If the queue is empty, we should continue to update to "last_tick_at" time.
               next if current_messages.nil?
 
+              # We only look at active publisher messages. Everything else is dropped.
+              current_messages.select! { |message| message.is_a?(::ActivePublisher::Message) }
+
               begin
                 @channel ||= make_channel
 
                 # Only open a single connection for each group of messages to an exchange
                 current_messages.group_by(&:exchange_name).each do |exchange_name, messages|
-                  begin
-                    current_messages -= messages
-                    publish_all(@channel, exchange_name, messages)
-                  ensure
-                    current_messages.concat(messages)
-                  end
+                  publish_all(@channel, exchange_name, messages)
+                  current_messages -= messages
                 end
               rescue *NETWORK_ERRORS
                 # Sleep because connection is down
                 await_network_reconnect
-
-                # Requeue and try again.
-                queue.concat(current_messages)
               rescue => unknown_error
                 ::ActivePublisher.configuration.error_handler.call(unknown_error, {:number_of_messages => current_messages.size})
                 current_messages.each do |message|
                   # Degrade to single message publish ... or at least attempt to
                   begin
                     ::ActivePublisher.publish(message.route, message.payload, message.exchange_name, message.options)
+                    current_messages.delete(message)
+                  rescue *PRECONDITION_ERRORS => error
+                    # Delete messages if rabbitmq cannot declare the exchange (or somet other precondition failed).
+                    ::ActivePublisher.configuration.error_handler.call(error, {:reason => "precondition failed", :message => message})
+                    current_messages.delete(message)
                   rescue => individual_error
                     ::ActivePublisher.configuration.error_handler.call(individual_error, {:route => message.route, :payload => message.payload, :exchange_name => message.exchange_name, :options => message.options})
                   end
@@ -90,6 +99,9 @@ module ActivePublisher
                 # TODO: Find a way to bubble this out of the thread for logging purposes.
                 # Reraise the error out of the publisher loop. The Supervisor will restart the consumer.
                 raise unknown_error
+              ensure
+                # Always requeue anything that gets stuck.
+                queue.concat(current_messages) unless current_messages.nil?
               end
             end
           end
@@ -98,37 +110,23 @@ module ActivePublisher
         def publish_all(channel, exchange_name, messages)
           ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :message_count => messages.size do
             exchange = channel.topic(exchange_name)
-            potentially_retry = []
-            loop do
-              break if messages.empty?
-              message = messages.shift
-
-              fail ActivePublisher::UnknownMessageClassError, "bulk publish messages must be ActivePublisher::Message" unless message.is_a?(ActivePublisher::Message)
+            messages.each do |message|
               fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
 
-              begin
-                options = ::ActivePublisher.publishing_options(message.route, message.options || {})
-                exchange.publish(message.payload, options)
-                potentially_retry << message
-              rescue
-                messages << message
-                raise
-              end
+              options = ::ActivePublisher.publishing_options(message.route, message.options || {})
+              exchange.publish(message.payload, options)
             end
-            wait_for_confirms(channel, messages, potentially_retry)
+            wait_for_confirms(channel)
           end
         end
 
-        def wait_for_confirms(channel, messages, potentially_retry)
+        def wait_for_confirms(channel)
           return true unless channel.using_publisher_confirms?
           if channel.method(:wait_for_confirms).arity > 0
             channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
           else
             channel.wait_for_confirms
           end
-        rescue
-          messages.concat(potentially_retry)
-          raise
         end
       end
     end
