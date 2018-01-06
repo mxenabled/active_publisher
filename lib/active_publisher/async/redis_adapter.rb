@@ -22,8 +22,7 @@ module ActivePublisher
 
         attr_reader :async_queue, :redis_pool
 
-
-        def initialize(new_redis_pool, supervisor_interval = 0.2)
+        def initialize(new_redis_pool)
           logger.info "Starting redis publisher adapter"
           # do something with supervision ?
           @redis_pool = new_redis_pool
