@@ -60,20 +60,17 @@ module ActivePublisher
 
         def create_and_supervise_consumer!
           @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-          @supervisor = ::Thread.new do
-            loop do
-              unless consumer.alive?
-                consumer.kill
-                @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
-              end
 
-              # Notify the current queue size.
-              ::ActiveSupport::Notifications.instrument "async_queue_size.active_publisher", queue.size
-
-              # Pause before checking the consumer again.
-              sleep supervisor_interval
+          supervisor_task = ::Concurrent::TimerTask.new(:execution_interval => supervisor_interval) do
+            unless consumer.alive?
+              consumer.kill
+              @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
             end
+
+            # Notify the current queue size.
+            ::ActiveSupport::Notifications.instrument "async_queue_size.active_publisher", queue.size
           end
+          supervisor_task.execute
         end
       end
 
