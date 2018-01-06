@@ -1,7 +1,6 @@
 module ActivePublisher
   module Async
     module RedisAdapter
-
       class RedisMultiPopQueue
         attr_reader :redis_pool
 
@@ -37,6 +36,8 @@ module ActivePublisher
             if non_block
               raise ThreadError, "queue empty"
             else
+              total_waited_time = 0
+
               loop do
                 total_waited_time += 0.2
                 sleep 0.2
@@ -60,7 +61,7 @@ module ActivePublisher
 
         def size
           redis_pool.with do |redis|
-            redis.scard || 0
+            redis.scard(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY) || 0
           end
         end
       end

@@ -16,11 +16,12 @@ module ActivePublisher
       end
 
       class Adapter
+        REDIS_ASYNC_WRITER = ::ActivePublisher::Async::RedisAdapter::Adapter::RedisAsyncWriter.new
+
         include ::ActivePublisher::Logging
 
         attr_reader :async_queue, :redis_pool
 
-        REDIS_ASYNC_WRITER = ::ActivePublisher::Async::RedisAdapter::Adapter::RedisAsyncWriter.new
 
         def initialize(new_redis_pool, supervisor_interval = 0.2)
           logger.info "Starting redis publisher adapter"
@@ -39,7 +40,7 @@ module ActivePublisher
         def shutdown!
           max_wait_time = ::ActivePublisher.configuration.seconds_to_wait_for_graceful_shutdown
           started_shutting_down_at = ::Time.now
-          waiting_message_size = self.class.waiting_message_count
+          waiting_message_size = self.class.waiting_message_count.value
 
           logger.info "Draining async publisher redis adapter before shutdown. current size: #{waiting_message_size}"
           while waiting_message_size > 0
