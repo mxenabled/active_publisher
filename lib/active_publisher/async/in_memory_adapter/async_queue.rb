@@ -63,7 +63,7 @@ module ActivePublisher
 
           supervisor_task = ::Concurrent::TimerTask.new(:execution_interval => supervisor_interval) do
             unless consumer.alive?
-              consumer.kill
+              consumer.kill rescue nil
               @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
             end
 

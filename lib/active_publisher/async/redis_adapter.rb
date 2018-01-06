@@ -27,6 +27,7 @@ module ActivePublisher
           logger.info "Starting redis publisher adapter"
           # do something with supervision ?
           @redis_pool = new_redis_pool
+          @async_queue = ::ActivePublisher::Async::RedisAdapter::Consumer.new(redis_pool)
         end
 
         def publish(route, payload, exchange_name, options = {})
