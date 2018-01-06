@@ -1,3 +1,5 @@
+require "active_publisher/async/redis_adapter/redis_multi_pop_queue"
+
 module ActivePublisher
   module Async
     module RedisAdapter

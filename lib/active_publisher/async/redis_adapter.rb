@@ -1,5 +1,7 @@
 require "concurrent"
 require "active_publisher/message"
+require "active_publisher/async/redis_adapter/consumer"
+require "active_publisher/async/redis_adapter/redis_async_writer"
 
 module ActivePublisher
   module Async
@@ -16,17 +18,18 @@ module ActivePublisher
       end
 
       class Adapter
-        REDIS_ASYNC_WRITER = ::ActivePublisher::Async::RedisAdapter::Adapter::RedisAsyncWriter.new
+        REDIS_ASYNC_WRITER = ::ActivePublisher::Async::RedisAdapter::RedisAsyncWriter.new
 
         include ::ActivePublisher::Logging
 
-        attr_reader :async_queue, :redis_pool
+        attr_reader :async_queue, :consumer, :redis_pool
 
         def initialize(new_redis_pool)
           logger.info "Starting redis publisher adapter"
           # do something with supervision ?
           @redis_pool = new_redis_pool
           @async_queue = ::ActivePublisher::Async::RedisAdapter::Consumer.new(redis_pool)
+          @consumer = @async_queue.consumer
         end
 
         def publish(route, payload, exchange_name, options = {})
