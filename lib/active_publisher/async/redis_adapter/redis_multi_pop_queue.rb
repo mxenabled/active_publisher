@@ -56,6 +56,8 @@ module ActivePublisher
             messages = redis.spop(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, number)
           end
 
+          messages = [] if messages.nil?
+          messages = [messages] unless messages.respond_to?(:each)
           messages.map { |message| ::Marshal.load(messsage) }
         end
 
