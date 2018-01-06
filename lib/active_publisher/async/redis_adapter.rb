@@ -22,14 +22,13 @@ module ActivePublisher
 
         include ::ActivePublisher::Logging
 
-        attr_reader :async_queue, :consumer, :redis_pool
+        attr_reader :async_queue, :redis_pool
 
         def initialize(new_redis_pool)
           logger.info "Starting redis publisher adapter"
           # do something with supervision ?
           @redis_pool = new_redis_pool
           @async_queue = ::ActivePublisher::Async::RedisAdapter::Consumer.new(redis_pool)
-          @consumer = @async_queue.consumer
         end
 
         def publish(route, payload, exchange_name, options = {})

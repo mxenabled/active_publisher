@@ -1,6 +1,5 @@
 describe ::ActivePublisher::Async::RedisAdapter::Adapter do
   subject { described_class.new(redis_pool) }
-  let(:consumer) { subject.consumer }
   let(:route) { "test" }
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
