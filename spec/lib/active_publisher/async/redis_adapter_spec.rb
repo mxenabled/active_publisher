@@ -4,7 +4,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
   let(:options) { { :test => :ok } }
-  let(:message) { ActivePublisher::Message.new(route, payload, exchange_name, options) }
+  let(:message) { ::ActivePublisher::Message.new(route, payload, exchange_name, options) }
   let(:redis_pool) { ::ConnectionPool.new(:size => 5) { ::Redis.new } }
 
   describe "#publish" do
@@ -13,14 +13,8 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
     end
 
     it "can publish a message to the queue" do
-      expect(::ActivePublisher::Async::RedisAdapter::Adapter::REDIS_ASYNC_WRITER).to receive(:push).with(redis_pool, message)
+      expect_any_instance_of(::Redis).to receive(:sadd)
       subject.publish(route, payload, exchange_name, options)
-    end
-
-    it "increments the waiting message counter on publish" do
-      expect(::ActivePublisher::Async::RedisAdapter::Adapter::REDIS_ASYNC_WRITER).to receive(:push).with(redis_pool, message)
-      subject.publish(route, payload, exchange_name, options)
-      expect(::ActivePublisher::Async::RedisAdapter.waiting_message_count.value).to be > 0
     end
   end
 

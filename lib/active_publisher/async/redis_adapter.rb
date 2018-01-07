@@ -34,9 +34,6 @@ module ActivePublisher
         end
 
         def shutdown!
-          max_wait_time = ::ActivePublisher.configuration.seconds_to_wait_for_graceful_shutdown
-          started_shutting_down_at = ::Time.now
-
           logger.info "Draining async publisher redis adapter before shutdown."
           sleep 0.5
         end
