@@ -30,6 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'concurrent-ruby'
   spec.add_dependency 'multi_op_queue', '>= 0.1.2'
 
+  spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "connection_pool"
   spec.add_development_dependency "fakeredis"
