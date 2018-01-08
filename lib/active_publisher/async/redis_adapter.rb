@@ -45,7 +45,9 @@ module ActivePublisher
         def shutdown!
           logger.info "Draining async publisher redis adapter before shutdown."
           flush_queue! until queue.empty?
-          sleep 0.5
+          # Sleeping 2.1 seconds because the most common redis `fsync` command in AOF mode is run every 1 second
+          # this will give at least 1 full `fsync` to run before the process dies
+          sleep 2.1
         end
 
       private
