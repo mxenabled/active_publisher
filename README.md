@@ -51,6 +51,7 @@ Defaults for the configuration are:
   :heartbeat => 5,
   :host => "localhost",
   :hosts => [],
+  :max_async_publisher_lag_time => 10,
   :network_recovery_interval => 1,
   :password => "guest",
   :port => 5672,
