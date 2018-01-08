@@ -28,7 +28,10 @@ module ActivePublisher
           @queue = ::MultiOpQueue::Queue.new
 
           supervisor_task = ::Concurrent::TimerTask.new(SUPERVISOR_INTERVAL) do
-            flush_queue!
+            queue_size = queue.size
+            number_of_times = [queue_size / 50, 1].max # get the max number of times to flush
+            number_of_times = [number_of_times, 5].min # don't allow it to be more than 5 per run
+            number_of_times.times { flush_queue! }
           end
 
           supervisor_task.execute
@@ -54,7 +57,7 @@ module ActivePublisher
 
         def flush_queue!
           return if queue.empty?
-          encoded_messages = queue.pop_up_to(25, :timeout => 0.1)
+          encoded_messages = queue.pop_up_to(25, :timeout => 0.001)
 
           return if encoded_messages.nil?
           return unless encoded_messages.respond_to?(:each)
