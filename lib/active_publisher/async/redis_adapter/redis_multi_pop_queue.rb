@@ -32,7 +32,8 @@ module ActivePublisher
             non_block = opts.fetch(:non_block, false)
           end
 
-          if empty?
+          queue_size = size
+          if queue_size <= 0
             if non_block
               raise ThreadError, "queue empty"
             else
@@ -41,11 +42,18 @@ module ActivePublisher
               loop do
                 total_waited_time += 0.2
                 sleep 0.2
-                return shift(num_to_pop) if !empty? 
+                queue_size = size
+
+                if queue_size > 0
+                  num_to_pop = [num_to_pop, queue_size].min # make sure we don't pop more than size
+                  return shift(num_to_pop)
+                end
+
                 return if timeout && total_waited_time > timeout
               end
             end
           else
+            num_to_pop = [num_to_pop, queue_size].min # make sure we don't pop more than size
             shift(num_to_pop)
           end
         end
