@@ -3,7 +3,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
   let(:route) { "test" }
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
-  let(:options) { { :test => :ok } }
+  let(:options) { { :flush_queue => true, :test => :ok } }
   let(:message) { ::ActivePublisher::Message.new(route, payload, exchange_name, options) }
   let(:redis_pool) { ::ConnectionPool.new(:size => 5) { ::Redis.new } }
 
@@ -33,7 +33,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
     it "pushes messages into redis" do
       subject.publish(route, payload, exchange_name, options)
 
-      verify_expectation_within(0.1) do
+      verify_expectation_within(2) do
         redis_pool.with do |redis|
           expect(redis.scard(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY)).to be > 0
         end

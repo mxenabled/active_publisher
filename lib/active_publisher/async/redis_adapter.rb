@@ -37,7 +37,7 @@ module ActivePublisher
         def publish(route, payload, exchange_name, options = {})
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
           queue << ::Marshal.dump(message)
-          flush_queue! if queue.size >= 20
+          flush_queue! if queue.size >= 20 || options[:flush_queue]
 
           nil
         end
