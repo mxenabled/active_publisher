@@ -15,7 +15,7 @@ module ActivePublisher
           end
 
           redis_pool.with do |redis|
-            redis.sadd(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, *encoded_messages)
+            redis.lpush(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY, encoded_messages)
           end
         end
 
@@ -53,17 +53,22 @@ module ActivePublisher
         def shift(number)
           messages = []
           redis_pool.with do |redis|
-            messages = redis.spop(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, number)
+            redis.pipelined do
+              number.times do
+                messages << redis.rpop(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY)
+              end
+            end
           end
 
           messages = [] if messages.nil?
           messages = [messages] unless messages.respond_to?(:each)
+          messages.compact!
           messages.map { |message| ::Marshal.load(messsage) }
         end
 
         def size
           redis_pool.with do |redis|
-            redis.scard(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY) || 0
+            redis.llen(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY) || 0
           end
         end
       end

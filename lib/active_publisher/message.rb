@@ -1,10 +1,7 @@
-require "securerandom"
-
 module ActivePublisher
-  class Message < Struct.new(:route, :payload, :exchange_name, :options, :uuid)
+  class Message < Struct.new(:route, :payload, :exchange_name, :options)
     def initialize(*args)
       super
-      @uuid = ::SecureRandom.uuid # Set Unique identifier
     end
   end
 end

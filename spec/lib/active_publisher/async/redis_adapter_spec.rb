@@ -13,7 +13,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
     end
 
     it "can publish a message to the queue" do
-      expect_any_instance_of(::Redis).to receive(:sadd)
+      expect_any_instance_of(::Redis).to receive(:lpush)
       subject.publish(route, payload, exchange_name, options)
     end
   end
@@ -35,7 +35,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
 
       verify_expectation_within(2) do
         redis_pool.with do |redis|
-          expect(redis.scard(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY)).to be > 0
+          expect(redis.llen(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY)).to be > 0
         end
       end
     end

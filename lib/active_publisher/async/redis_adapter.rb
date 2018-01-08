@@ -5,7 +5,7 @@ require "multi_op_queue"
 module ActivePublisher
   module Async
     module RedisAdapter
-      REDIS_SET_KEY = "ACTIVE_PUBLISHER_SET".freeze
+      REDIS_LIST_KEY = "ACTIVE_PUBLISHER_LIST".freeze
 
       def self.new(*args)
         ::ActivePublisher::Async::RedisAdapter::Adapter.new(*args)
@@ -64,11 +64,7 @@ module ActivePublisher
           return unless encoded_messages.size > 0
 
           redis_pool.with do |redis|
-            redis.pipelined do
-              encoded_messages.each do |encoded_message|
-                redis.sadd(::ActivePublisher::Async::RedisAdapter::REDIS_SET_KEY, encoded_message)
-              end
-            end
+            redis.lpush(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY, encoded_messages)
           end
         end
       end
