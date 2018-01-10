@@ -46,7 +46,7 @@ module ActivePublisher
         end
 
         def make_channel
-          channel = ::ActivePublisher::Connection.connection.create_channel
+          channel = ::ActivePublisher::Async::InMemoryAdapter::Channel.new
           channel.confirm_select if ::ActivePublisher.configuration.publisher_confirms
           channel
         end
