@@ -122,11 +122,7 @@ module ActivePublisher
 
         def wait_for_confirms(channel)
           return true unless channel.using_publisher_confirms?
-          if channel.method(:wait_for_confirms).arity > 0
-            channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
-          else
-            channel.wait_for_confirms
-          end
+          channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
         end
       end
     end
