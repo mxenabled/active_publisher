@@ -21,11 +21,4 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
   describe "#shutdown!" do
     # This is called when the rspec finishes. I'm sure we can make this a better test.
   end
-
-  describe "::Message" do
-    specify { expect(message.route).to eq(route) }
-    specify { expect(message.payload).to eq(payload) }
-    specify { expect(message.exchange_name).to eq(exchange_name) }
-    specify { expect(message.options).to eq(options) }
-  end
 end
