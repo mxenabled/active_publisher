@@ -2,10 +2,11 @@ module ActivePublisher
   module Async
     module RedisAdapter
       class RedisMultiPopQueue
-        attr_reader :redis_pool
+        attr_reader :list_key, :redis_pool
 
-        def initialize(redis_connection_pool)
+        def initialize(redis_connection_pool, new_list_key)
           @redis_pool = redis_connection_pool
+          @list_key = new_list_key
         end
 
         def concat(messages)
@@ -15,7 +16,7 @@ module ActivePublisher
           end
 
           redis_pool.with do |redis|
-            redis.lpush(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY, encoded_messages)
+            redis.lpush(list_key, encoded_messages)
           end
         end
 
@@ -40,8 +41,8 @@ module ActivePublisher
               total_waited_time = 0
 
               loop do
-                total_waited_time += 0.2
-                sleep 0.2
+                total_waited_time += 0.1
+                sleep 0.1
                 queue_size = size
 
                 if queue_size > 0
@@ -53,17 +54,17 @@ module ActivePublisher
               end
             end
           else
-            num_to_pop = [num_to_pop, queue_size].min # make sure we don't pop more than size
             shift(num_to_pop)
           end
         end
 
         def shift(number)
           messages = []
+          number = [number, size].min
           redis_pool.with do |redis|
             redis.pipelined do
               number.times do
-                messages << redis.rpop(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY)
+                messages << redis.rpop(list_key)
               end
             end
           end
@@ -71,12 +72,12 @@ module ActivePublisher
           messages = [] if messages.nil?
           messages = [messages] unless messages.respond_to?(:each)
           messages.compact!
-          messages.map { |message| ::Marshal.load(messsage) }
+          messages.map { |message| ::Marshal.load(message.value) }
         end
 
         def size
           redis_pool.with do |redis|
-            redis.llen(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY) || 0
+            redis.llen(list_key) || 0
           end
         end
       end

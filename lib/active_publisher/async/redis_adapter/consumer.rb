@@ -12,7 +12,7 @@ module ActivePublisher
         attr_reader :consumer, :queue, :supervisor
 
         def initialize(redis_pool)
-          @queue = ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue.new(redis_pool)
+          @queue = ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue.new(redis_pool, ::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY)
           create_and_supervise_consumer!
         end
 
