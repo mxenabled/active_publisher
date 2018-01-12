@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'activesupport', '>= 3.2'
   spec.add_dependency 'concurrent-ruby'
-  spec.add_dependency 'multi_op_queue', '>= 0.1.2'
+  spec.add_dependency 'multi_op_queue', '>= 0.2.0'
 
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "bundler"
