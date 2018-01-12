@@ -11,6 +11,119 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     end
   end
 
+  describe "#<<" do
+    it "pushes 1 item on the list" do
+      subject << "derp"
+      expect(subject.size).to be 1
+      expect(subject.pop_up_to(100)).to eq(["derp"])
+    end
+
+    it "pushes 10 items on the list" do
+      10.times do
+        subject << "derp"
+      end
+
+      expect(subject.size).to be 10
+      expect(subject.pop_up_to(100)).to eq([
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+      ])
+    end
+  end
+
+  describe "#concat" do
+    it "pushes 1 item on the list" do
+      subject.concat("derp")
+      expect(subject.size).to be 1
+      expect(subject.pop_up_to(100)).to eq(["derp"])
+    end
+
+    it "pushes 10 items on the list" do
+      10.times do 
+        subject.concat("derp")
+      end
+
+      expect(subject.size).to be 10
+      expect(subject.pop_up_to(100)).to eq([
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+      ])
+    end
+
+    it "pushes 10 items on the list in single concat" do
+      subject.concat("derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp",
+                     "derp")
+
+      expect(subject.size).to be 10
+      expect(subject.pop_up_to(100)).to eq([
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+      ])
+    end
+
+    it "pushes 10 items on the list in single concat (with array)" do
+      array = [
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp"
+      ]
+
+      subject.concat(array)
+      expect(subject.size).to be 10
+      expect(subject.pop_up_to(100)).to eq([
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+        "derp",
+      ])
+    end
+  end
+
   describe "#empty?" do
     it "is true when nothing has been inserted" do
       expect(subject.empty?).to be true

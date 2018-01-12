@@ -9,7 +9,18 @@ module ActivePublisher
           @list_key = new_list_key
         end
 
-        def concat(messages)
+        def <<(message)
+          encoded_message = ::Marshal.dump(message)
+
+          redis_pool.with do |redis|
+            redis.lpush(list_key, encoded_message)
+          end
+        end
+
+        def concat(*messages)
+          messages = messages.flatten
+          messages.compact!
+
           encoded_messages = []
           messages.each do |message|
             encoded_messages << ::Marshal.dump(message)
