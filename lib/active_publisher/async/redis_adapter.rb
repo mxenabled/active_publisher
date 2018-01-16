@@ -1,3 +1,4 @@
+require "active_publisher"
 require "active_publisher/message"
 require "active_publisher/async/redis_adapter/consumer"
 require "multi_op_queue"
