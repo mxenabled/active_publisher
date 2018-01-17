@@ -32,8 +32,11 @@ module ActivePublisher
 
           supervisor_task.execute
         end
-      end
 
+        def size
+          consumer.size
+        end
+      end
     end
   end
 end
