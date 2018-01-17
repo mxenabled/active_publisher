@@ -34,7 +34,7 @@ module ActivePublisher
         end
 
         def size
-          consumer.size
+          queue.size
         end
       end
     end
