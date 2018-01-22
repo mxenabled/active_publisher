@@ -20,6 +20,7 @@ module ActivePublisher
         def concat(*messages)
           messages = messages.flatten
           messages.compact!
+          return if messages.empty?
 
           encoded_messages = []
           messages.each do |message|

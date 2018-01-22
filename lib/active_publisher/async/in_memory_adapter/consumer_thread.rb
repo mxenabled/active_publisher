@@ -101,7 +101,7 @@ module ActivePublisher
                 raise unknown_error
               ensure
                 # Always requeue anything that gets stuck.
-                queue.concat(current_messages) unless current_messages.nil?
+                queue.concat(current_messages) if current_messages && !current_messages.empty?
               end
             end
           end

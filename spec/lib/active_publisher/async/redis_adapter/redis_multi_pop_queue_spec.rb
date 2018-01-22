@@ -40,6 +40,10 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
   end
 
   describe "#concat" do
+    it "does not push 0 items on the list" do
+      expect { subject.concat([]) }.to_not raise_error
+    end
+
     it "pushes 1 item on the list" do
       subject.concat("derp")
       expect(subject.size).to be 1
