@@ -83,8 +83,16 @@ module ActivePublisher
 
           messages = [] if messages.nil?
           messages = [messages] unless messages.respond_to?(:each)
-          messages.compact!
-          messages.map { |message| ::Marshal.load(message.value) }
+
+          shifted_messages = []
+          messages.each do |message|
+            next unless message.is_a?(::Redis::Future)
+            next if message.value.nil?
+
+            shifted_messages << ::Marshal.load(message.value)
+          end
+
+          shifted_messages
         end
 
         def size
