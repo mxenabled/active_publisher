@@ -135,7 +135,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "is false when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.lpush(list_key, "derp")
+        redis.rpush(list_key, "derp")
       end
 
       expect(subject.empty?).to be false
@@ -144,7 +144,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     it "is false when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.lpush(list_key, "derp")
+          redis.rpush(list_key, "derp")
         end
       end
 
@@ -159,7 +159,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "returns 1 item when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.lpush(list_key, ::Marshal.dump("derp"))
+        redis.rpush(list_key, ::Marshal.dump("derp"))
       end
 
       expect(subject.pop_up_to(100)).to eq(["derp"])
@@ -168,7 +168,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     it "is 10 when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.lpush(list_key, ::Marshal.dump("derp"))
+          redis.rpush(list_key, ::Marshal.dump("derp"))
         end
       end
 
@@ -194,7 +194,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "returns 1 item when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.lpush(list_key, ::Marshal.dump("derp"))
+        redis.rpush(list_key, ::Marshal.dump("derp"))
       end
 
       expect(subject.shift(100)).to eq(["derp"])
@@ -203,7 +203,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     it "is 10 when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.lpush(list_key, ::Marshal.dump("derp"))
+          redis.rpush(list_key, ::Marshal.dump("derp"))
         end
       end
 
@@ -229,7 +229,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "is 1 when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.lpush(list_key, "derp")
+        redis.rpush(list_key, "derp")
       end
 
       expect(subject.size).to be 1
@@ -238,7 +238,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     it "is 10 when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.lpush(list_key, "derp")
+          redis.rpush(list_key, "derp")
         end
       end
 

@@ -65,7 +65,7 @@ module ActivePublisher
           return unless encoded_messages.size > 0
 
           redis_pool.with do |redis|
-            redis.lpush(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY, encoded_messages)
+            redis.rpush(::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY, encoded_messages)
           end
         end
       end

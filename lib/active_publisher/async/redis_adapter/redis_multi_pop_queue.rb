@@ -13,7 +13,7 @@ module ActivePublisher
           encoded_message = ::Marshal.dump(message)
 
           redis_pool.with do |redis|
-            redis.lpush(list_key, encoded_message)
+            redis.rpush(list_key, encoded_message)
           end
         end
 
@@ -28,7 +28,7 @@ module ActivePublisher
           end
 
           redis_pool.with do |redis|
-            redis.lpush(list_key, encoded_messages)
+            redis.rpush(list_key, encoded_messages)
           end
         end
 
@@ -71,25 +71,27 @@ module ActivePublisher
         end
 
         def shift(number)
-          messages = []
           number = [number, size].min
+          return [] if number <= 0
+
+          messages = []
+          multi_response = []
           redis_pool.with do |redis|
-            redis.pipelined do
-              number.times do
-                messages << redis.rpop(list_key)
-              end
+            multi_response = redis.multi do
+              redis.lrange(list_key, 0, number - 1)
+              redis.ltrim(list_key, number, -1)
             end
           end
 
+          messages = multi_response.first
           messages = [] if messages.nil?
           messages = [messages] unless messages.respond_to?(:each)
 
           shifted_messages = []
           messages.each do |message|
-            next unless message.is_a?(::Redis::Future)
-            next if message.value.nil?
+            next if message.nil?
 
-            shifted_messages << ::Marshal.load(message.value)
+            shifted_messages << ::Marshal.load(message)
           end
 
           shifted_messages

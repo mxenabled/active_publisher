@@ -13,7 +13,7 @@ describe ::ActivePublisher::Async::RedisAdapter::Adapter do
     end
 
     it "can publish a message to the queue" do
-      expect_any_instance_of(::Redis).to receive(:lpush)
+      expect_any_instance_of(::Redis).to receive(:rpush)
       subject.publish(route, payload, exchange_name, options)
     end
   end
