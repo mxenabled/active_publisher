@@ -84,6 +84,9 @@ module ActivePublisher
           end
 
           messages = multi_response.first
+          success = multi_response.last
+          return [] unless success =~ /ok/i
+
           messages = [] if messages.nil?
           messages = [messages] unless messages.respond_to?(:each)
 
