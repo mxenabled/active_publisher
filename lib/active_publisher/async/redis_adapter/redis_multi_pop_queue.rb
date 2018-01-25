@@ -85,6 +85,7 @@ module ActivePublisher
 
           messages = multi_response.first
           success = multi_response.last
+          return [] if multi_response.size != 2 || success.nil?
           return [] unless success =~ /ok/i
 
           messages = [] if messages.nil?
