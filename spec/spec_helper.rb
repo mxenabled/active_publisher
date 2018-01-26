@@ -1,6 +1,9 @@
 $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require "active_publisher"
 require "support/setup_subscriber"
+require "fakeredis/rspec"
+require "active_publisher/async/redis_adapter"
+require "connection_pool"
 
 ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new
 # Silence the logger

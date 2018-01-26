@@ -71,7 +71,7 @@ module ActivePublisher
 
             # Check to see if we should restart the consumer.
             if !consumer.alive? || consumer_is_lagging
-              consumer.kill
+              consumer.kill rescue nil
               @consumer = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
             end
 
