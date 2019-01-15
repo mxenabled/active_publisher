@@ -19,6 +19,23 @@ module ActivePublisher
   class ExchangeMismatchError < StandardError; end
   class FailedPublisherConfirms < StandardError; end
 
+  NETWORK_ERRORS = if ::RUBY_PLATFORM == "java"
+                     [
+                       ::MarchHare::NetworkException,
+                       ::MarchHare::ConnectionRefused,
+                       ::Java::ComRabbitmqClient::AlreadyClosedException,
+                       ::Java::JavaIo::IOException
+                     ].freeze
+                   else
+                     [
+                       ::Bunny::NetworkFailure,
+                       ::Bunny::TCPConnectionFailed,
+                       ::Bunny::ConnectionTimeout,
+                       ::Timeout::Error,
+                       ::IOError
+                     ].freeze
+                   end
+
   def self.configuration
     @configuration ||= ::ActivePublisher::Configuration.new
   end
@@ -81,8 +98,19 @@ module ActivePublisher
   end
 
   def self.with_exchange(exchange_name)
-    connection = ::ActivePublisher::Connection.connection
-    channel = connection.create_channel
+    total_recovery_wait = 0
+
+    begin
+      connection = ::ActivePublisher::Connection.connection
+      channel = connection.create_channel
+    rescue *NETWORK_ERRORS
+      # Connection will auto-recover asynchronously; if we are "waiting" for that to happen for longer than 5 minutes then we should
+      # just disconnect and reconnect the connection (which will be done automatically on disconnect)
+      total_recovery_wait += 0.5
+      sleep 0.5
+      ::ActivePublisher::Connection.disconnect! if total_recovery_wait > 600
+    end
+
     begin
       channel.confirm_select if configuration.publisher_confirms
       exchange = channel.topic(exchange_name)
