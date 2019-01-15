@@ -98,17 +98,11 @@ module ActivePublisher
   end
 
   def self.with_exchange(exchange_name)
-    total_recovery_wait = 0
-
     begin
       connection = ::ActivePublisher::Connection.connection
       channel = connection.create_channel
     rescue *NETWORK_ERRORS
-      # Connection will auto-recover asynchronously; if we are "waiting" for that to happen for longer than 5 minutes then we should
-      # just disconnect and reconnect the connection (which will be done automatically on disconnect)
-      total_recovery_wait += 0.5
-      sleep 0.5
-      ::ActivePublisher::Connection.disconnect! if total_recovery_wait > 600
+      ::ActivePublisher::Connection.disconnect!
     end
 
     begin
