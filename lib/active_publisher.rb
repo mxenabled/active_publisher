@@ -35,7 +35,7 @@ module ActivePublisher
   # @param [Hash] options hash to set message parameters (e.g. headers)
   def self.publish(route, payload, exchange_name, options = {})
     with_exchange(exchange_name) do |exchange|
-      ::ActiveSupport::Notifications.instrument "message_published.active_publisher" do
+      ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :route => route do
         exchange.publish(payload, publishing_options(route, options))
       end
     end
@@ -51,7 +51,7 @@ module ActivePublisher
         fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
 
         begin
-          ::ActiveSupport::Notifications.instrument "message_published.active_publisher" do
+          ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :route => message.route do
             exchange.publish(message.payload, publishing_options(message.route, message.options || {}))
           end
         rescue
