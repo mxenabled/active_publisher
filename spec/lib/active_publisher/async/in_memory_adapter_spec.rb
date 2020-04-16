@@ -103,7 +103,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
     describe "#create_consumer" do
       it "can successfully publish a message" do
         expect(::ActiveSupport::Notifications).to receive(:instrument)
-                                                    .with("message_published.active_publisher",:message_count => 1)
+                                                    .with("message_published.active_publisher", :route => "test", :message_count => 1)
         expect(consumer).to receive(:publish_all).with(anything, exchange_name, [message]).and_call_original
         subject.push(message)
         sleep 0.1 # Await results

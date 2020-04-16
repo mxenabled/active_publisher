@@ -108,16 +108,15 @@ module ActivePublisher
         end
 
         def publish_all(channel, exchange_name, messages)
-          ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :message_count => messages.size do
-            exchange = channel.topic(exchange_name)
-            messages.each do |message|
-              fail ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
-
+          exchange = channel.topic(exchange_name)
+          messages.each do |message|
+            fail ::ActivePublisher::ExchangeMismatchError, "bulk publish messages must match publish_all exchange_name" if message.exchange_name != exchange_name
+            ::ActiveSupport::Notifications.instrument "message_published.active_publisher", :route => message.route, :message_count => 1 do
               options = ::ActivePublisher.publishing_options(message.route, message.options || {})
               exchange.publish(message.payload, options)
             end
-            wait_for_confirms(channel)
           end
+          wait_for_confirms(channel)
         end
 
         def wait_for_confirms(channel)
