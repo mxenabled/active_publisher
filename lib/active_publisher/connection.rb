@@ -31,9 +31,16 @@ module ActivePublisher
     def self.create_connection
       if ::RUBY_PLATFORM == "java"
         connection = ::MarchHare.connect(connection_options)
+        connection.on_blocked do |reason|
+          on_blocked(reason)
+        end
+        connection
       else
         connection = ::Bunny.new(connection_options)
         connection.start
+        connection.on_blocked do |blocked_message|
+          on_blocked(blocked_message.reason)
+        end
         connection
       end
     end
@@ -58,5 +65,10 @@ module ActivePublisher
       }
     end
     private_class_method :connection_options
+
+    def self.on_blocked(reason)
+      ::ActiveSupport::Notifications.instrument("connection_blocked.active_publisher", :reason => reason)
+    end
+    private_class_method :on_blocked
   end
 end
