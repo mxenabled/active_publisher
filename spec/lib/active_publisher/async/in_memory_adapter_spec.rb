@@ -110,7 +110,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "when network error occurs" do
-        let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
+        let(:error) { ::ActivePublisher::NETWORK_ERRORS.first }
         before { allow(consumer).to receive(:publish_all).and_raise(error) }
 
         it "requeues the message" do

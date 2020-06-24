@@ -5,14 +5,6 @@ module ActivePublisher
         attr_reader :thread, :queue, :sampled_queue_size, :last_tick_at
 
         if ::RUBY_PLATFORM == "java"
-          NETWORK_ERRORS = [::MarchHare::NetworkException, ::MarchHare::ConnectionRefused,
-                            ::Java::ComRabbitmqClient::AlreadyClosedException, ::Java::JavaIo::IOException].freeze
-        else
-          NETWORK_ERRORS = [::Bunny::NetworkFailure, ::Bunny::TCPConnectionFailed, ::Bunny::ConnectionTimeout,
-                            ::Timeout::Error, ::IOError].freeze
-        end
-
-        if ::RUBY_PLATFORM == "java"
           PRECONDITION_ERRORS = [::MarchHare::PreconditionFailed]
         else
           PRECONDITION_ERRORS = [::Bunny::PreconditionFailed]
@@ -77,7 +69,7 @@ module ActivePublisher
                   publish_all(@channel, exchange_name, messages)
                   current_messages -= messages
                 end
-              rescue *NETWORK_ERRORS
+              rescue *ActivePublisher::NETWORK_ERRORS
                 # Sleep because connection is down
                 await_network_reconnect
               rescue => unknown_error
