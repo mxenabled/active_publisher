@@ -29,6 +29,13 @@ describe ::ActivePublisher::Configuration do
       ::ActivePublisher::Configuration.configure_from_yaml_and_cli({"password" => "WAT"}, true)
     end
 
+    it "can use verify_peer" do
+      expect(::ActivePublisher.configuration.verify_peer).to eq(true)
+      expect(::ActivePublisher.configuration).to receive(:verify_peer=).with(false).and_call_original
+      ::ActivePublisher::Configuration.configure_from_yaml_and_cli({"verify_peer" => false}, true)
+      expect(::ActivePublisher.configuration.verify_peer).to eq(false)
+    end
+
     context "when using a yaml file" do
       let!(:sample_yaml_location) { ::File.expand_path(::File.join("spec", "support", "sample_config.yml")) }
 
