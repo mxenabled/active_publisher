@@ -40,7 +40,7 @@ module ActivePublisher
 
         def pause_publishing?
           redis_pool.with do |redis|
-            redis.exists(RABBITMQ_PAUSED_KEY)
+            redis.exists?(RABBITMQ_PAUSED_KEY)
           end
         end
 
