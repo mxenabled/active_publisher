@@ -18,6 +18,7 @@ jobs:
       - ruby/install-deps:
           bundler-version: 2.1.4
           with-cache: false
+          path: ./vendor/bundle
       - run:
           name: Which bundler?
           command: bundle -v
