@@ -7,7 +7,7 @@ jobs:
   test:
     parallelism: 1
     parameters:
-      ruby-version:
+      ruby-image:
         type: string
     docker:
       - image: << parameters.ruby-image >>
