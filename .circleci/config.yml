@@ -13,10 +13,10 @@ jobs:
       - image: << parameters.ruby-image >>
     steps:
       - checkout
+      - ruby/install-deps
       - run:
           name: Which bundler?
           command: bundle -v
-      - ruby/bundle-install
       - ruby/rspec-test
 
 # strangely, there seems to be very little documentation about exactly how martix builds work.
