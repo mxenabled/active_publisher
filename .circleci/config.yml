@@ -15,7 +15,8 @@ jobs:
       - image: << parameters.ruby-image >>
     steps:
       - checkout
-      - ruby/install-deps
+      - ruby/install-deps:
+          with-cache: false
       - run:
           name: Which bundler?
           command: bundle -v
