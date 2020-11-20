@@ -73,6 +73,24 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         end
       end
 
+      context "consumer goes bad" do
+        it "cleans up the channel" do
+          original_consumer = subject.consumer
+          original_consumer_channel = subject.consumer.channel
+
+          expect(original_consumer_channel).to receive(:close).and_call_original
+          allow(subject.consumer).to receive(:publish_all).and_raise("Did not work!")
+          allow(::ActivePublisher).to receive(:publish).and_raise("Did not work!")
+          subject.push(message)
+
+          # The consumer should be replaced. The old channel should be cleaned up.
+          verify_expectation_within(2) do
+            expect(subject.consumer.__id__).to_not eq(original_consumer.__id__)
+            expect(subject.consumer.channel.__id__).to_not eq(original_consumer_channel.__id__)
+          end
+        end
+      end
+
       context "lagging consumer" do
         it "restarts the consumer when it's lagging" do
           allow(consumer).to receive(:last_tick_at).and_return(::Time.now - 20)
@@ -144,10 +162,10 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           channel = ::ActivePublisher::Connection.connection.create_channel
           channel.fanout(bad_exchange_name)
 
-          reason = nil
+          reasons = []
           collected_messages = []
           allow(::ActivePublisher.configuration.error_handler).to receive(:call) do |err, options|
-            reason = options[:reason]
+            reasons << options[:reason]
             collected_messages << options[:message] if options[:message]
           end
 
@@ -155,7 +173,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           subject.queue.concat(messages)
 
           verify_expectation_within(5) do
-            expect(reason).to eq("precondition failed")
+            expect(reasons).to include("precondition failed")
             expect(subject.queue.size).to eq(0)
           end
 
