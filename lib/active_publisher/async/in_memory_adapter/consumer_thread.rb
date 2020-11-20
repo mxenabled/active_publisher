@@ -89,7 +89,6 @@ module ActivePublisher
 
         def start_thread
           return if alive?
-          @channel = make_channel
           @thread = ::Thread.new { start_consuming_thread }
         end
 
@@ -101,6 +100,8 @@ module ActivePublisher
             update_last_tick_at
             # If the queue is empty, we should continue to update to "last_tick_at" time.
             next if current_messages.nil?
+
+            @channel ||= make_channel
 
             # We only look at active publisher messages. Everything else is dropped.
             current_messages.select! { |message| message.is_a?(::ActivePublisher::Message) }
