@@ -15,13 +15,18 @@ jobs:
       - image: << parameters.ruby-image >>
     steps:
       - checkout
-      - ruby/install-deps:
-          bundler-version: 1.17.2
-          with-cache: false
+      - run:
+          name: Install bundler
+          command: gem install bundler
       - run:
           name: Which bundler?
           command: bundle -v
-      - ruby/rspec-test
+      - run:
+          name: bundle install
+          command: bundle install
+      - run:
+          name: rspec
+          command: bundle exec rspec
 
 # strangely, there seems to be very little documentation about exactly how martix builds work.
 # By defining a param inside your job definition, Circle CI will automatically spawn a job for
