@@ -1,3 +1,5 @@
+# Inspired by: http://mikebian.co/running-tests-against-multiple-ruby-versions-using-circleci/
+
 version: 2.1
 
 orbs:
