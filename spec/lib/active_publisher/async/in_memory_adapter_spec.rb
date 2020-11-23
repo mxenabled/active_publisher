@@ -74,8 +74,19 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
       end
 
       context "consumer goes bad" do
+        it "channel starts out nil" do
+          expect(subject.consumer.channel).to be nil
+        end
+
         it "cleans up the channel" do
           original_consumer = subject.consumer
+
+          # wait for channel to get created before setting original_consumer_channel
+          subject.push(message)
+          verify_expectation_within(0.5) do
+            expect(subject.consumer.channel).to_not be nil
+          end
+
           original_consumer_channel = subject.consumer.channel
 
           expect(original_consumer_channel).to receive(:close).and_call_original
