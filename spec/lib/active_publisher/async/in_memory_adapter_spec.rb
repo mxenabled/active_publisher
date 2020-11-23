@@ -156,7 +156,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
             expect(subject.size).to eq(0)
           end
 
-          consumer.instance_variable_get(:@channel).close
+          consumer.channel.close
           subject.push(message)
           verify_expectation_within(0.5) do
             expect(subject.consumer.__id__).to_not eq(consumer.__id__)
