@@ -2,6 +2,8 @@ module ActivePublisher
   module Async
     module RedisAdapter
       class RedisMultiPopQueue
+        RABBITMQ_PAUSED_KEY = "ACTIVE_PUBLISHER_RABBITMQ_PAUSED".freeze
+
         attr_reader :list_key, :redis_pool
 
         def initialize(redis_connection_pool, new_list_key)
@@ -34,6 +36,12 @@ module ActivePublisher
 
         def empty?
           size <= 0
+        end
+
+        def pause_publishing?
+          redis_pool.with do |redis|
+            redis.exists?(RABBITMQ_PAUSED_KEY)
+          end
         end
 
         def pop_up_to(num_to_pop, opts = {})
@@ -73,6 +81,7 @@ module ActivePublisher
         def shift(number)
           number = [number, size].min
           return [] if number <= 0
+          return [] if pause_publishing?
 
           messages = []
           multi_response = []

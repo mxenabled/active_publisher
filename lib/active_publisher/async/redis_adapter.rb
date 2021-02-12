@@ -13,6 +13,7 @@ module ActivePublisher
       end
 
       class Adapter
+        QUEUE_FLUSH_SIZE = 100
         SUPERVISOR_INTERVAL = {
           :execution_interval => 1.5, # seconds
           :timeout_interval => 1, # seconds
@@ -41,7 +42,7 @@ module ActivePublisher
         def publish(route, payload, exchange_name, options = {})
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
           queue << ::Marshal.dump(message)
-          flush_queue! if queue.size >= 20 || options[:flush_queue]
+          flush_queue! if queue.size >= QUEUE_FLUSH_SIZE || options[:flush_queue]
 
           nil
         end
