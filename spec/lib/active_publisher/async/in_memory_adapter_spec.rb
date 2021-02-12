@@ -1,5 +1,4 @@
 describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
-  let(:consumer) { subject.consumer }
   let(:route) { "test" }
   let(:payload) { "payload" }
   let(:exchange_name) { "place" }
@@ -8,6 +7,10 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
   let(:mock_queue) { double(:push => nil, :size => 0) }
   let(:back_pressure_strategy) { :raise }
   let(:max_queue_size) { 100 }
+
+  def consumer
+    subject.consumers.values.first
+  end
 
   after { ::ActivePublisher::Connection.disconnect! }
 
@@ -55,12 +58,12 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
     describe ".initialize" do
       it "creates a supervisor" do
-        expect_any_instance_of(ActivePublisher::Async::InMemoryAdapter::AsyncQueue).to receive(:create_and_supervise_consumer!)
+        expect_any_instance_of(ActivePublisher::Async::InMemoryAdapter::AsyncQueue).to receive(:create_and_supervise_consumers!)
         subject
       end
     end
 
-    describe "#create_and_supervise_consumer!" do
+    describe "#create_and_supervise_consumers!" do
       it "restarts the consumer when it dies" do
         consumer.kill
 
@@ -69,7 +72,32 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         end
 
         verify_expectation_within(0.3) do
-          expect(subject.consumer).to be_alive
+          expect(consumer).to be_alive
+        end
+      end
+
+      context "multiple publisher threads" do
+        before { ::ActivePublisher.configuration.publisher_threads = 2 }
+        after { ::ActivePublisher.configuration.publisher_threads = 1 }
+
+        let(:consumers) { subject.consumers.to_a }
+
+        it "can create and supervise multiple consumer threads" do
+          expect(subject.consumers.size).to eq(2)
+          subject.consumers.values.each do |conusmer_thread|
+            expect(conusmer_thread).to be_a ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread
+          end
+        end
+
+        it "can restart a single bad producer" do
+          conusmer1_id, old_consumer1 = consumers.first
+          _, old_consumer2 = consumers.last
+          expect(old_consumer1.__id__).to_not eq(old_consumer2.__id__)
+          old_consumer1.kill
+          verify_expectation_within(0.5) do
+            new_consumer1 = subject.consumers[conusmer1_id]
+            expect(new_consumer1.__id__).to_not eq(old_consumer1.__id__)
+          end
         end
       end
 
@@ -104,11 +132,12 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
       context "lagging consumer" do
         it "restarts the consumer when it's lagging" do
-          allow(consumer).to receive(:last_tick_at).and_return(::Time.now - 20)
+          old_consumer = consumer
+          allow(old_consumer).to receive(:last_tick_at).and_return(::Time.now - 20)
 
           verify_expectation_within(0.5) do
             # Verify a new consumer is created.
-            expect(subject.consumer.__id__).to_not eq(consumer.__id__)
+            expect(old_consumer.__id__).to_not eq(consumer.__id__)
           end
         end
 
@@ -151,6 +180,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
       context "when a channel closes" do
         it "crashes the consumer" do
+          old_consumer = consumer
           subject.push(message)
           verify_expectation_within(0.5) do
             expect(subject.size).to eq(0)
@@ -159,7 +189,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           consumer.channel.close
           subject.push(message)
           verify_expectation_within(0.5) do
-            expect(subject.consumer.__id__).to_not eq(consumer.__id__)
+            expect(old_consumer.__id__).to_not eq(consumer.__id__)
           end
         end
       end

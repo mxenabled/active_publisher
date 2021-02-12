@@ -5,6 +5,7 @@ describe ::ActivePublisher::Configuration do
     specify { expect(subject.hosts).to eq(["localhost"]) }
     specify { expect(subject.max_async_publisher_lag_time).to eq(10) }
     specify { expect(subject.network_recovery_interval).to eq(1) }
+    specify { expect(subject.publisher_threads).to eq(1) }
     specify { expect(subject.port).to eq(5672) }
     specify { expect(subject.timeout).to eq(1) }
     specify { expect(subject.tls).to eq(false) }

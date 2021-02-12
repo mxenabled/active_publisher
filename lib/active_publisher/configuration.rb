@@ -11,6 +11,7 @@ module ActivePublisher
                   :network_recovery_interval,
                   :password,
                   :port,
+                  :publisher_threads,
                   :publisher_confirms,
                   :publisher_confirms_timeout,
                   :seconds_to_wait_for_graceful_shutdown,
@@ -39,6 +40,7 @@ module ActivePublisher
       :max_async_publisher_lag_time => 10,
       :network_recovery_interval => NETWORK_RECOVERY_INTERVAL,
       :port => 5672,
+      :publisher_threads => 1,
       :publisher_confirms => false,
       :publisher_confirms_timeout => 5_000, #specified as a number of milliseconds
       :seconds_to_wait_for_graceful_shutdown => 30,
