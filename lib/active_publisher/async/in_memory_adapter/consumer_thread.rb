@@ -2,7 +2,7 @@ module ActivePublisher
   module Async
     module InMemoryAdapter
       class ConsumerThread
-        attr_reader :channel, :thread, :queue, :sampled_queue_size, :last_tick_at
+        attr_reader :channel, :flush_max, :thread, :queue, :sampled_queue_size, :last_tick_at
 
         if ::RUBY_PLATFORM == "java"
           CHANNEL_CLOSED_ERRORS = [::MarchHare::ChannelAlreadyClosed]
@@ -27,6 +27,7 @@ module ActivePublisher
         def initialize(listen_queue)
           @queue = listen_queue
           @sampled_queue_size = queue.size
+          @flush_max = ::ActivePublisher.configuration.messages_per_batch
 
           update_last_tick_at
           start_thread
@@ -96,7 +97,7 @@ module ActivePublisher
           loop do
             # Sample the queue size so we don't shutdown when messages are in flight.
             @sampled_queue_size = queue.size
-            current_messages = queue.pop_up_to(50, :timeout => 0.1)
+            current_messages = queue.pop_up_to(flush_max, :timeout => 0.1)
             update_last_tick_at
             # If the queue is empty, we should continue to update to "last_tick_at" time.
             next if current_messages.nil?

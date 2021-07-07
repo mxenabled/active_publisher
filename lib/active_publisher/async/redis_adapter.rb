@@ -19,7 +19,7 @@ module ActivePublisher
         }
         include ::ActivePublisher::Logging
 
-        attr_reader :async_queue, :redis_pool, :queue
+        attr_reader :async_queue, :flush_max, :flush_min, :redis_pool, :queue
 
         def initialize(new_redis_pool)
           logger.info "Starting redis publisher adapter"
@@ -27,6 +27,8 @@ module ActivePublisher
           @redis_pool = new_redis_pool
           @async_queue = ::ActivePublisher::Async::RedisAdapter::Consumer.new(redis_pool)
           @queue = ::MultiOpQueue::Queue.new
+          @flush_max = ::ActivePublisher.configuration.messages_per_batch
+          @flush_min = @flush_max / 2
 
           supervisor_task = ::Concurrent::TimerTask.new(SUPERVISOR_INTERVAL) do
             queue_size = queue.size
@@ -41,7 +43,7 @@ module ActivePublisher
         def publish(route, payload, exchange_name, options = {})
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
           queue << ::Marshal.dump(message)
-          flush_queue! if queue.size >= 20 || options[:flush_queue]
+          flush_queue! if queue.size >= flush_min || options[:flush_queue]
 
           nil
         end
@@ -58,7 +60,7 @@ module ActivePublisher
 
         def flush_queue!
           return if queue.empty?
-          encoded_messages = queue.pop_up_to(25, :timeout => 0.001)
+          encoded_messages = queue.pop_up_to(flush_max, :timeout => 0.001)
 
           return if encoded_messages.nil?
           return unless encoded_messages.respond_to?(:each)
