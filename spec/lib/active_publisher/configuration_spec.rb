@@ -36,6 +36,13 @@ describe ::ActivePublisher::Configuration do
       expect(::ActivePublisher.configuration.verify_peer).to eq(false)
     end
 
+    it "can use messages_per_batch" do
+      expect(::ActivePublisher.configuration.messages_per_batch).to eq(25)
+      expect(::ActivePublisher.configuration).to receive(:messages_per_batch=).with(50).and_call_original
+      ::ActivePublisher::Configuration.configure_from_yaml_and_cli({"messages_per_batch" => 50}, true)
+      expect(::ActivePublisher.configuration.messages_per_batch).to eq(50)
+    end
+
     context "when using a yaml file" do
       let!(:sample_yaml_location) { ::File.expand_path(::File.join("spec", "support", "sample_config.yml")) }
 
