@@ -10,7 +10,8 @@ module ActivePublisher
 
     def self.connection
       CONNECTION_MUTEX.synchronize do
-        return @connection if @connection
+        # Connection must be a valid object and connected. Otherwise, reconnect.
+        return @connection if @connection && @connection.connected?
         @connection = create_connection
       end
     end
