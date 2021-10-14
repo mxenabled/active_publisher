@@ -76,6 +76,7 @@ module ActivePublisher
               if !consumer.alive? || consumer_is_lagging
                 consumer.kill rescue nil
                 consumers[consumer_id] = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
+                ::ActiveSupport::Notifications.instrument "async_queue.thread_restart"
               end
 
               # Notify the current queue size.
