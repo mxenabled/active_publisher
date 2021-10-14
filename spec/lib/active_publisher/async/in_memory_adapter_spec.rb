@@ -124,8 +124,10 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
           # The consumer should be replaced. The old channel should be cleaned up.
           verify_expectation_within(2) do
-            expect(subject.consumer.__id__).to_not eq(original_consumer.__id__)
-            expect(subject.consumer.channel.__id__).to_not eq(original_consumer_channel.__id__)
+            expect(subject.consumers.values.first.__id__).to_not eq(original_consumer.__id__)
+            expect(subject.consumers.values.first.channel.__id__).to_not eq(original_consumer_channel.__id__)
+            # expect(subject.consumer.__id__).to_not eq(original_consumer.__id__)
+            # expect(subject.consumer.channel.__id__).to_not eq(original_consumer_channel.__id__)
           end
         end
       end
