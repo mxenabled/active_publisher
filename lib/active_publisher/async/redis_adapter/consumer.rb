@@ -24,7 +24,6 @@ module ActivePublisher
 
             supervisor_task = ::Concurrent::TimerTask.new(SUPERVISOR_INTERVAL) do
               consumer = consumers[consumer_id]
-              # This may also be the place to start additional publishers when we are getting backed up ... ?
               unless consumer.alive?
                 consumer.kill rescue nil
                 consumers[consumer_id] = ::ActivePublisher::Async::InMemoryAdapter::ConsumerThread.new(queue)
