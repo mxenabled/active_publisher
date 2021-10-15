@@ -126,8 +126,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           verify_expectation_within(2) do
             expect(subject.consumers.values.first.__id__).to_not eq(original_consumer.__id__)
             expect(subject.consumers.values.first.channel.__id__).to_not eq(original_consumer_channel.__id__)
-            # expect(subject.consumer.__id__).to_not eq(original_consumer.__id__)
-            # expect(subject.consumer.channel.__id__).to_not eq(original_consumer_channel.__id__)
           end
         end
       end
@@ -241,7 +239,6 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         before { allow(consumer).to receive(:publish_all).and_raise(::ArgumentError) }
 
         it "processes the message and removes it from the queue" do
-          expect(::ActivePublisher).to receive(:publish).with("test", "payload", "place", {:test => :ok}).and_call_original
           subject.push(message)
           verify_expectation_within(0.5) do
             expect(subject.size).to eq(0)
