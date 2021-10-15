@@ -188,7 +188,11 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
             expect(subject.size).to eq(0)
           end
 
+          verify_expectation_within(0.5) do
+            expect(consumer.channel).to_not be(nil)
+          end
           consumer.channel.close
+
           subject.push(message)
           verify_expectation_within(0.5) do
             expect(old_consumer.__id__).to_not eq(consumer.__id__)
