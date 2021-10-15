@@ -4,7 +4,6 @@ require "support/setup_subscriber"
 require "fakeredis/rspec"
 require "active_publisher/async/redis_adapter"
 require "connection_pool"
-require "pry"
 
 ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new
 # Silence the logger
