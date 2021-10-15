@@ -242,6 +242,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
           verify_expectation_within(0.5) do
             expect(subject.size).to eq(0)
           end
+          sleep 1
         end
 
         it "kills the consumer" do
