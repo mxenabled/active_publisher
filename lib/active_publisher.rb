@@ -4,6 +4,7 @@ else
   require "bunny"
 end
 require "active_support"
+require "securerandom"
 require "thread"
 
 require "active_publisher/logging"
