@@ -4,11 +4,16 @@ require "support/setup_subscriber"
 require "fakeredis/rspec"
 require "active_publisher/async/redis_adapter"
 require "connection_pool"
+require "rspec-benchmark"
 
 ::ActivePublisher::Async.publisher_adapter = ::ActivePublisher::Async::InMemoryAdapter::Adapter.new
 # Silence the logger
 $TESTING = true
 ::ActivePublisher::Logging.initialize_logger(nil)
+
+RSpec.configure do |config|
+  config.include RSpec::Benchmark::Matchers
+end
 
 def verify_expectation_within(number_of_seconds, check_every = 0.02)
   waiting_since = ::Time.now

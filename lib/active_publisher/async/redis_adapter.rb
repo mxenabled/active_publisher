@@ -42,7 +42,7 @@ module ActivePublisher
 
         def publish(route, payload, exchange_name, options = {})
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
-          queue << ::Marshal.dump(message)
+          queue << message.to_json
           flush_queue! if queue.size >= flush_min || options[:flush_queue]
 
           nil
