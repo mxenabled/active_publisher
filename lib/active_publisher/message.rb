@@ -1,4 +1,6 @@
+require "base64"
 require "json"
+
 module ActivePublisher
   class Message < Struct.new(:route, :payload, :exchange_name, :options)
     class << self
@@ -6,7 +8,7 @@ module ActivePublisher
         parsed = JSON.load(payload)
         self.new(
           parsed["route"],
-          parsed["payload"],
+          Base64.decode64(parsed["payload"]),
           parsed["exchange_name"],
           parsed["options"],
         )
@@ -14,7 +16,12 @@ module ActivePublisher
     end
 
     def to_json
-      self.to_h.to_json
+      {
+        route: self.route,
+        payload: Base64.encode64(self.payload),
+        exchange_name: self.exchange_name,
+        options: self.options,
+      }.to_json
     end
   end
 end

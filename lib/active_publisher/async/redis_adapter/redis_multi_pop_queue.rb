@@ -97,8 +97,6 @@ module ActivePublisher
 
           messages.each do |message|
             next if message.nil?
-            # TODO: This should probably attempt to ::Marshal.load and fall back to JSON for
-            # apps cutting over to new serialization.
             shifted_messages << ::ActivePublisher::Message.from_json(message)
           end
 
