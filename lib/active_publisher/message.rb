@@ -1,5 +1,6 @@
 require "base64"
 require "json"
+require "active_support/core_ext/hash/keys"
 
 module ActivePublisher
   class Message < Struct.new(:route, :payload, :exchange_name, :options)
@@ -10,7 +11,7 @@ module ActivePublisher
           parsed["route"],
           Base64.decode64(parsed["payload"]),
           parsed["exchange_name"],
-          parsed["options"],
+          parsed["options"].symbolize_keys,
         )
       end
     end
