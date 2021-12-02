@@ -167,6 +167,18 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
         sleep 0.1 # Await results
       end
 
+      describe "when publish confirms enabled" do
+        it "notifies active support with an instrumentation" do
+          ::ActivePublisher.configuration.publisher_confirms = true
+          expect(::ActiveSupport::Notifications).to receive(:instrument)
+                                                    .with("message_published.active_publisher", :route => "test", :message_count => 1)
+          expect(::ActiveSupport::Notifications).to receive(:instrument).with("publishes_confirmed.active_publisher")
+          expect(consumer).to receive(:publish_all).with(exchange_name, [message]).and_call_original
+          subject.push(message)
+          sleep 0.1 # Await results
+        end
+      end
+
       context "when network error occurs" do
         let(:error) { ActivePublisher::Async::InMemoryAdapter::ConsumerThread::NETWORK_ERRORS.first }
         before { allow(consumer).to receive(:publish_all).and_raise(error) }

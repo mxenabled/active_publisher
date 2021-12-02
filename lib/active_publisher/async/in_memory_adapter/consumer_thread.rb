@@ -151,7 +151,9 @@ module ActivePublisher
 
         def wait_for_confirms
           return true unless channel.using_publisher_confirms?
-          channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
+          ::ActiveSupport::Notifications.instrument "publishes_confirmed.active_publisher" do
+            channel.wait_for_confirms(::ActivePublisher.configuration.publisher_confirms_timeout)
+          end
         end
       end
     end
