@@ -77,9 +77,9 @@ module ActivePublisher
           messages = []
           multi_response = []
           redis_pool.with do |redis|
-            multi_response = redis.multi do
-              redis.lrange(list_key, 0, number - 1)
-              redis.ltrim(list_key, number, -1)
+            multi_response = redis.multi do |pipeline|
+              pipeline.lrange(list_key, 0, number - 1)
+              pipeline.ltrim(list_key, number, -1)
             end
           end
 
