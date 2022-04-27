@@ -83,11 +83,13 @@ module ActivePublisher
       yaml_config = {}
       absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
       action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
+
       if ::File.exists?(absolute_config_path)
-        yaml_config = ::YAML.load(::ERB.new(::File.read(absolute_config_path)).result)[env]
+        yaml_config = load_yaml_config_from_file(absolute_config_path)[env]
       elsif ::File.exists?(action_subscriber_config_file)
-        yaml_config = ::YAML.load(::ERB.new(::File.read(action_subscriber_config_file)).result)[env]
+        yaml_config = load_yaml_config_from_file(action_subscriber_config_file)[env]
       end
+
       yaml_config
     end
     private_class_method :attempt_to_load_yaml_file
@@ -100,6 +102,14 @@ module ActivePublisher
       [false, nil]
     end
     private_class_method :fetch_config_value
+
+    def self.load_yaml_config_from_file(file_path)
+      erb_yaml = ::ERB.new(::File.read(file_path)).result
+      # Defined in Psych 3.2+ and the new canonical way to load trusted documents:
+      # https://github.com/ruby/psych/issues/533#issuecomment-1019363688
+      ::YAML.unsafe_load(erb_yaml)
+    end
+    private_class_method :load_yaml_config_from_file
 
     ##
     # Instance Methods
