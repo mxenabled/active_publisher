@@ -107,7 +107,7 @@ module ActivePublisher
       erb_yaml = ::ERB.new(::File.read(file_path)).result
       # Defined in Psych 3.2+ and the new canonical way to load trusted documents:
       # https://github.com/ruby/psych/issues/533#issuecomment-1019363688
-      ::YAML.unsafe_load(erb_yaml)
+      ::YAML.respond_to?(:unsafe_load) ? ::YAML.unsafe_load(erb_yaml) : ::YAML.load(erb_yaml)
     end
     private_class_method :load_yaml_config_from_file
 
