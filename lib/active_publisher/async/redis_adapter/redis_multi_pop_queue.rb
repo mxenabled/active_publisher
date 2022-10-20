@@ -1,3 +1,5 @@
+require "json"
+
 module ActivePublisher
   module Async
     module RedisAdapter
@@ -10,7 +12,7 @@ module ActivePublisher
         end
 
         def <<(message)
-          encoded_message = ::Marshal.dump(message)
+          encoded_message = message.to_json
 
           redis_pool.with do |redis|
             redis.rpush(list_key, encoded_message)
@@ -24,7 +26,7 @@ module ActivePublisher
 
           encoded_messages = []
           messages.each do |message|
-            encoded_messages << ::Marshal.dump(message)
+            encoded_messages << message.to_json
           end
 
           redis_pool.with do |redis|
@@ -92,10 +94,10 @@ module ActivePublisher
           messages = [messages] unless messages.respond_to?(:each)
 
           shifted_messages = []
+
           messages.each do |message|
             next if message.nil?
-
-            shifted_messages << ::Marshal.load(message)
+            shifted_messages << ::ActivePublisher::Message.from_json(message)
           end
 
           shifted_messages

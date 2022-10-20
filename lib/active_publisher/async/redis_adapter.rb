@@ -6,7 +6,7 @@ require "multi_op_queue"
 module ActivePublisher
   module Async
     module RedisAdapter
-      REDIS_LIST_KEY = "ACTIVE_PUBLISHER_LIST".freeze
+      REDIS_LIST_KEY = "ACTIVE_PUBLISHER_LIST.V2".freeze
 
       def self.new(*args)
         ::ActivePublisher::Async::RedisAdapter::Adapter.new(*args)
@@ -42,7 +42,7 @@ module ActivePublisher
 
         def publish(route, payload, exchange_name, options = {})
           message = ::ActivePublisher::Message.new(route, payload, exchange_name, options)
-          queue << ::Marshal.dump(message)
+          queue << message.to_json
           flush_queue! if queue.size >= flush_min || options[:flush_queue]
 
           nil
