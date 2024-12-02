@@ -31,6 +31,11 @@ module ActivePublisher
         end
 
         def push(message)
+          if message.payload.bytesize > ::ActivePublisher.configuration.max_message_size
+            ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
+            fail ::ActivePublisher::Async::InMemoryAdapter::UnableToPersistMessageError, "Message dropped. Message payload is larger than max_message_size."
+          end
+
           if queue.size >= max_queue_size
             case back_pressure_strategy
             when :drop
