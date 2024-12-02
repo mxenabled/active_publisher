@@ -8,7 +8,7 @@ module ActivePublisher
                   :host,
                   :hosts,
                   :max_async_publisher_lag_time,
-                  :max_message_size,
+                  :max_message_bytes,
                   :messages_per_batch,
                   :network_recovery_interval,
                   :password,
@@ -41,7 +41,7 @@ module ActivePublisher
       :password => "guest",
       :messages_per_batch => 25,
       :max_async_publisher_lag_time => 10,
-      :max_message_size => 67108864, # 64 MB
+      :max_message_bytes => 67108864, # 64 MB
       :network_recovery_interval => NETWORK_RECOVERY_INTERVAL,
       :port => 5672,
       :publisher_threads => 1,
