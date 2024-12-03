@@ -31,7 +31,7 @@ module ActivePublisher
         end
 
         def push(message)
-          max_payload_check(message) if ::ActivePublisher.configuration.max_message_bytes 
+          max_payload_check(message) if ::ActivePublisher.configuration.max_payload_bytes 
 
           if queue.size >= max_queue_size
             case back_pressure_strategy
@@ -93,10 +93,10 @@ module ActivePublisher
         end
 
         def max_payload_check(message)
-          return unless message.payload.bytesize > ::ActivePublisher.configuration.max_message_bytes
+          return unless message.payload.bytesize > ::ActivePublisher.configuration.max_payload_bytes
 
           ::ActiveSupport::Notifications.instrument "message_dropped.active_publisher"
-          fail ::ActivePublisher::Async::InMemoryAdapter::MaxPayloadBytesExceeded, "Message dropped, the message payload bytes #{message.payload.bytesize} exceeds the ActivePublisher configuration max_payload_bytes #{::ActivePublisher.configuration.max_message_bytes}."
+          fail ::ActivePublisher::Async::InMemoryAdapter::MaxPayloadBytesExceeded, "Message dropped, the message payload bytes #{message.payload.bytesize} exceeds the ActivePublisher configuration max_payload_bytes #{::ActivePublisher.configuration.max_payload_bytes}."
         end
       end
     end
