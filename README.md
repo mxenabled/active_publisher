@@ -52,6 +52,7 @@ Defaults for the configuration are:
   :host => "localhost",
   :hosts => [],
   :max_async_publisher_lag_time => 10,
+  :max_payload_bytes => nil,
   :network_recovery_interval => 1,
   :password => "guest",
   :port => 5672,
