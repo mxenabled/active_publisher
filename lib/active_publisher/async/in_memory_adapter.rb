@@ -13,7 +13,6 @@ module ActivePublisher
         ::ActivePublisher::Async::InMemoryAdapter::Adapter.new(*args)
       end
 
-      class MaxPayloadBytesExceeded < ::StandardError; end
       class UnableToPersistMessageError < ::StandardError; end
 
       class Adapter
