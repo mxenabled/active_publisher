@@ -1,9 +1,9 @@
-require "active_publisher/message"
 require "active_publisher/async/in_memory_adapter/async_queue"
 require "active_publisher/async/in_memory_adapter/channel"
 require "active_publisher/async/in_memory_adapter/consumer_thread"
+require "active_publisher/message"
+require "active_publisher/multi_op_queue"
 require "concurrent"
-require "multi_op_queue"
 
 module ActivePublisher
   module Async

@@ -20,7 +20,7 @@ module ActivePublisher
           self.back_pressure_strategy = back_pressure_strategy
           @max_queue_size = max_queue_size
           @supervisor_interval = supervisor_interval
-          @queue = ::MultiOpQueue::Queue.new
+          @queue = ::ActivePublisher::MultiOpQueue::Queue.new
           @consumers = {}
           create_and_supervise_consumers!
         end

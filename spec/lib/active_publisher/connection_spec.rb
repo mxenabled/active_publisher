@@ -20,7 +20,7 @@ describe ::ActivePublisher::Connection do
 
     it "can deliver an on_blocked message" do
       expect(::ActiveSupport::Notifications).to receive(:instrument).
-        with("connection_blocked.active_publisher", :reason => reason)
+        with("connection_blocked.active_publisher", {:reason => reason})
 
       # NOTE: Trigger the receiving of a blocked message from the broker.
       # It's a bit of a hack but it is a more realistic test without changing

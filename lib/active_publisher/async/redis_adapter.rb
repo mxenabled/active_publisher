@@ -1,7 +1,7 @@
 require "active_publisher"
-require "active_publisher/message"
 require "active_publisher/async/redis_adapter/consumer"
-require "multi_op_queue"
+require "active_publisher/message"
+require "active_publisher/multi_op_queue"
 
 module ActivePublisher
   module Async
@@ -26,7 +26,7 @@ module ActivePublisher
           # do something with supervision ?
           @redis_pool = new_redis_pool
           @async_queue = ::ActivePublisher::Async::RedisAdapter::Consumer.new(redis_pool)
-          @queue = ::MultiOpQueue::Queue.new
+          @queue = ::ActivePublisher::MultiOpQueue::Queue.new
           @flush_max = ::ActivePublisher.configuration.messages_per_batch
           @flush_min = @flush_max / 2
 
