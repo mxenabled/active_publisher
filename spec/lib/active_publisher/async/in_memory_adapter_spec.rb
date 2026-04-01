@@ -159,23 +159,36 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
     end
 
     describe "#create_consumer" do
+      let(:event_name) { "message_published.active_publisher" }
       it "can successfully publish a message" do
-        expect(::ActiveSupport::Notifications).to receive(:instrument)
-                                                    .with("message_published.active_publisher", :route => "test", :message_count => 1)
-        expect(consumer).to receive(:publish_all).with(exchange_name, [message]).and_call_original
-        subject.push(message)
-        sleep 0.1 # Await results
-      end
+        captured_payload = nil
+        callback = ->(_name, _start, _finish, _id, payload) { captured_payload = payload }
 
-      describe "when publish confirms enabled" do
-        it "notifies active support with an instrumentation" do
-          ::ActivePublisher.configuration.publisher_confirms = true
-          expect(::ActiveSupport::Notifications).to receive(:instrument)
-                                                    .with("message_published.active_publisher", :route => "test", :message_count => 1)
-          expect(::ActiveSupport::Notifications).to receive(:instrument).with("publishes_confirmed.active_publisher")
+        ::ActiveSupport::Notifications.subscribed(callback, event_name) do
           expect(consumer).to receive(:publish_all).with(exchange_name, [message]).and_call_original
           subject.push(message)
           sleep 0.1 # Await results
+        end
+
+        expect(captured_payload).to eq(route: "test", :message_count => 1)
+      end
+
+      describe "when publish confirms enabled" do
+        let(:pub_confirm) { "publishes_confirmed.active_publisher" }
+        it "notifies active support with an instrumentation" do
+          captured_payload = nil
+          callback = ->(_name, _start, _finish, _id, payload) { captured_payload = payload }
+
+          ::ActivePublisher.configuration.publisher_confirms = true
+
+          ::ActiveSupport::Notifications.subscribed(callback, pub_confirm) do
+            expect(consumer).to receive(:publish_all).with(exchange_name, [message]).and_call_original
+            subject.push(message)
+            sleep 0.1 # Await results
+          end
+
+          # An empty hash is expected
+          expect(captured_payload).to eq({})
         end
       end
 
@@ -283,7 +296,7 @@ describe ::ActivePublisher::Async::InMemoryAdapter::Adapter do
 
     describe "#push" do
       context "when the queue has room" do
-        before { allow(::MultiOpQueue::Queue).to receive(:new).and_return(mock_queue) }
+        before { allow(::ActivePublisher::MultiOpQueue::Queue).to receive(:new).and_return(mock_queue) }
 
         it "successfully adds to the queue" do
           expect(mock_queue).to receive(:push).with(message)

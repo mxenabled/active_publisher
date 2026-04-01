@@ -26,9 +26,10 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'bunny', '~> 2.1'
   end
 
-  spec.add_dependency 'activesupport', '>= 3.2'
+  spec.required_ruby_version = '>= 3.1.0'
+
+  spec.add_dependency 'activesupport', '>= 6.0'
   spec.add_dependency 'concurrent-ruby'
-  spec.add_dependency 'multi_op_queue', '>= 0.2.0'
 
   spec.add_development_dependency "benchmark-ips"
   spec.add_development_dependency "bundler"

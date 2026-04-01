@@ -84,9 +84,9 @@ module ActivePublisher
       absolute_config_path = ::File.expand_path(::File.join("config", "active_publisher.yml"))
       action_subscriber_config_file = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
 
-      if ::File.exists?(absolute_config_path)
+      if ::File.exist?(absolute_config_path)
         yaml_config = load_yaml_config_from_file(absolute_config_path)[env]
-      elsif ::File.exists?(action_subscriber_config_file)
+      elsif ::File.exist?(action_subscriber_config_file)
         yaml_config = load_yaml_config_from_file(action_subscriber_config_file)[env]
       end
 
