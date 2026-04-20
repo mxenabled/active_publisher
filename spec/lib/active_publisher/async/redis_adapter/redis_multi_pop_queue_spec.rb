@@ -1,6 +1,8 @@
 describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
   let(:list_key) { ::ActivePublisher::Async::RedisAdapter::REDIS_LIST_KEY }
   let(:redis_pool) { ::ConnectionPool.new(:size => 5) { ::Redis.new } }
+  let(:message) { ::ActivePublisher::Message.new('rtg.key', 'payload', 'some.exchange', {})}
+  let(:ten_messages) { 10.times.map { message } }
   subject { described_class.new(redis_pool, list_key) }
 
   describe "initialize with a redis_pool and list_key" do
@@ -13,29 +15,18 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
   describe "#<<" do
     it "pushes 1 item on the list" do
-      subject << "derp"
+      subject << message
       expect(subject.size).to be 1
-      expect(subject.pop_up_to(100)).to eq(["derp"])
+      expect(subject.pop_up_to(100)).to eq([message])
     end
 
     it "pushes 10 items on the list" do
       10.times do
-        subject << "derp"
+        subject << message
       end
 
       expect(subject.size).to be 10
-      expect(subject.pop_up_to(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.pop_up_to(100)).to eq(ten_messages)
     end
   end
 
@@ -45,86 +36,40 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     end
 
     it "pushes 1 item on the list" do
-      subject.concat("derp")
+      subject.concat(message)
       expect(subject.size).to be 1
-      expect(subject.pop_up_to(100)).to eq(["derp"])
+      expect(subject.pop_up_to(100)).to eq([message])
     end
 
     it "pushes 10 items on the list" do
       10.times do 
-        subject.concat("derp")
+        subject.concat(message)
       end
 
       expect(subject.size).to be 10
-      expect(subject.pop_up_to(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.pop_up_to(100)).to eq(ten_messages)
     end
 
     it "pushes 10 items on the list in single concat" do
-      subject.concat("derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp",
-                     "derp")
+      subject.concat(message,
+                     message,
+                     message,
+                     message,
+                     message,
+                     message,
+                     message,
+                     message,
+                     message,
+                     message)
 
       expect(subject.size).to be 10
-      expect(subject.pop_up_to(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.pop_up_to(100)).to eq(ten_messages)
     end
 
     it "pushes 10 items on the list in single concat (with array)" do
-      array = [
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp"
-      ]
-
-      subject.concat(array)
+      subject.concat(ten_messages)
       expect(subject.size).to be 10
-      expect(subject.pop_up_to(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.pop_up_to(100)).to eq(ten_messages)
     end
   end
 
@@ -135,7 +80,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "is false when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.rpush(list_key, "derp")
+        redis.rpush(list_key, message.to_json)
       end
 
       expect(subject.empty?).to be false
@@ -144,7 +89,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
     it "is false when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.rpush(list_key, "derp")
+          redis.rpush(list_key, message.to_json)
         end
       end
 
@@ -159,31 +104,20 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "returns 1 item when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.rpush(list_key, ::Marshal.dump("derp"))
+        redis.rpush(list_key, message.to_json)
       end
 
-      expect(subject.pop_up_to(100)).to eq(["derp"])
+      expect(subject.pop_up_to(100)).to eq([message])
     end
 
     it "is 10 when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.rpush(list_key, ::Marshal.dump("derp"))
+          redis.rpush(list_key, message.to_json)
         end
       end
 
-      expect(subject.pop_up_to(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.pop_up_to(100)).to eq(ten_messages)
     end
   end
 
@@ -194,31 +128,20 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "returns 1 item when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.rpush(list_key, ::Marshal.dump("derp"))
+        redis.rpush(list_key, message.to_json)
       end
 
-      expect(subject.shift(100)).to eq(["derp"])
+      expect(subject.shift(100)).to eq([message])
     end
 
     it "is 10 when ten items are inserted to the list_key List" do
       redis_pool.with do |redis|
         10.times do 
-          redis.rpush(list_key, ::Marshal.dump("derp"))
+          redis.rpush(list_key, message.to_json)
         end
       end
 
-      expect(subject.shift(100)).to eq([
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-        "derp",
-      ])
+      expect(subject.shift(100)).to eq(ten_messages)
     end
   end
 
@@ -229,7 +152,7 @@ describe ::ActivePublisher::Async::RedisAdapter::RedisMultiPopQueue do
 
     it "is 1 when a single item is inserted to the list_key List" do
       redis_pool.with do |redis|
-        redis.rpush(list_key, "derp")
+        redis.rpush(list_key, message.to_json)
       end
 
       expect(subject.size).to be 1
